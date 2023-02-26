@@ -1,0 +1,21 @@
+.App {
+  align-items: center;
+  text-align: center;
+  background-color: #22223b;
+  display: flex;
+  justify-content: center;
+  color: white;
+}
+
+.my_row {
+  background-color: #4a4e69;
+  text-align: left;
+  border-radius: 5px;
+
+  margin: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-gap: 1rem;
+}
