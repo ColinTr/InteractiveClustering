@@ -5,7 +5,6 @@ import { styled } from "@mui/material/styles";
 import Form from 'react-bootstrap/Form';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import {map} from "react-bootstrap/ElementChildren";
 
 
 const StyledTextField = styled(TextField)({
@@ -59,54 +58,83 @@ class FeatureSelection extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            searchQuery: null,
+            search_query: '',
+            search_filtered_list : null,
             formatted_features : mock_features.map((feature, index) => ({"name": feature.feature_name, "checked" : true, index : index}))
         };
+
+        this.state.search_filtered_list =  this.state.formatted_features
     }
 
     onChangeSearch = query => {
-        this.setState({ searchQuery: query });
+        if (query.target.value !== '') {
+            this.setState({ search_query: query.target.value });
+        }
+
+        const updated_filtered_list = this.getUpdatedFilteredList(this.state.formatted_features, query.target.value)
+        this.setState({ search_filtered_list: updated_filtered_list })
     };
+
+    getUpdatedFilteredList = (features_list, query) => {
+        return features_list.filter((feature) => {
+            if (query === "") {
+                return features_list
+            } else {
+                return feature.name.toLowerCase().includes(query.toLowerCase())
+            }
+        })
+    }
 
     onChangeCheckbox = i => {
         let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
         let formatted_features_item = {...formatted_features[i]};  // Get the element we want to update
         formatted_features_item.checked = !formatted_features_item.checked  // Change it
         formatted_features[i] = formatted_features_item // Replace it in the array's copy
-        this.setState({formatted_features})  // And finally replace the array in the state
+
+        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.search_query)
+        this.setState({formatted_features: formatted_features, search_filtered_list: updated_filtered_list})  // And finally replace the array in the state
     }
 
-    features_list = props => {
+    onUncheckButtonClick = () => {
+        let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
+        this.state.search_filtered_list.map((feature) => (  // For each feature currently displayed...
+            formatted_features[feature.index].checked = false
+        ))
+
+        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.search_query)
+        this.setState({formatted_features: formatted_features, search_filtered_list: updated_filtered_list})  // And finally replace the array in the state
+    }
+
+    onCheckButtonClick = () => {
+        let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
+        this.state.search_filtered_list.map((feature) => (  // For each feature currently displayed...
+            formatted_features[feature.index].checked = true
+        ))
+
+        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.search_query)
+        this.setState({formatted_features: formatted_features, search_filtered_list: updated_filtered_list})  // And finally replace the array in the state
+    }
+
+    onClearSearchButtonClick = () => {
+        const updated_filtered_list = this.getUpdatedFilteredList(this.state.formatted_features, '')
+        this.setState({search_filtered_list: updated_filtered_list, search_query: ''})  // And finally replace the array in the state
+    }
+
+    features_list = () => {
         return (
             <Container>
-                {this.state.formatted_features.map((feature, i) => (
+                {this.state.search_filtered_list.map((feature) => (
                     <Form.Check
                         type="checkbox"
                         id={"checkbox" + feature.name}
                         label={"Feature " + feature.name}
                         key={feature.name}
-                        onChange={() => this.onChangeCheckbox(i)}
-                        checked={this.state.formatted_features[feature.index].checked}
+                        onChange={() => this.onChangeCheckbox(feature.index)}
+                        checked={feature.checked}
                     />
                 ))}
             </Container>
         );
-    }
-
-    onUncheckButtonClick = () => {
-        let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
-        formatted_features.map((feature, i) => (
-            feature.checked = false
-        ))
-        this.setState({formatted_features})  // And finally replace the array in the state
-    }
-
-    onCheckButtonClick = () => {
-        let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
-        formatted_features.map((feature, i) => (
-            feature.checked = true
-        ))
-        this.setState({formatted_features})  // And finally replace the array in the state
     }
 
     render() {
@@ -125,25 +153,34 @@ class FeatureSelection extends React.Component {
                                 variant="outlined"
                                 fullWidth
                                 label="Search"
+                                value={this.state.search_query}
+                                onChange={this.onChangeSearch}
                                 sx={{ input: { color: 'white'} }}
                             />
                         </Col>
                     </Row>
 
                     <Row style={{flexDirection:"row", paddingTop: "10px"}}>
-                        <Col>
-                            <button type="button" className="btn btn-secondary " style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px"}} onClick={() => this.onCheckButtonClick()}>
+                        <Col style={{paddingLeft:12, paddingRight:5}} className="d-flex flex-column justify-content-end">
+                            <button type="button" className="btn btn-secondary" style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}} onClick={() => this.onCheckButtonClick()}>
                                 Check all
                             </button>
                         </Col>
-                        <Col>
-                            <button type="button" className="btn btn-secondary" style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px"}} onClick={() => this.onUncheckButtonClick()}>
+                        <Col style={{paddingLeft:5, paddingRight:5}} className="d-flex flex-column justify-content-end">
+                            <button type="button" className="btn btn-secondary" style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}} onClick={() => this.onUncheckButtonClick()}>
                                 Uncheck all
+                            </button>
+                        </Col>
+                        <Col style={{paddingLeft:5, paddingRight:12}} className="d-flex flex-column justify-content-end">
+                            <button type="button" className="btn btn-secondary" style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}} onClick={() => this.onClearSearchButtonClick()}>
+                                Clear search
                             </button>
                         </Col>
                     </Row>
 
-                    <Row className="d-flex flex-row" style={{overflowY: "auto", flex:"1 1 auto", height: '0px', paddingTop: "10px"}}>
+                    <hr/>
+
+                    <Row className="d-flex flex-row" style={{overflowY: "auto", flex:"1 1 auto", height: '0px'}}>
                         {this.features_list()}
                     </Row>
 

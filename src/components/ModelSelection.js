@@ -5,8 +5,8 @@ import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
 import KMeansParameters from "./models_parameters/KMeansParameters";
-import '../App.css';
 import TabularNCDParameters from "./models_parameters/TabularNCDParameters";
+import '../App.css';
 
 class ModelSelection extends React.Component {
 
@@ -27,7 +27,7 @@ class ModelSelection extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            selected_model : "k_means",
+            selected_model : "tabularncd",
 
             parameters_to_display : null,
 
@@ -46,7 +46,7 @@ class ModelSelection extends React.Component {
             tabncd_activation_fct : this.default_tabncd_activation_fct,
         };
 
-        this.set_display_to_tabularncd()
+        this.state.parameters_to_display = this.get_tabularncd_state_parameters()
     }
 
     on_kmeans_n_clusters_change = (event) => {
@@ -90,52 +90,59 @@ class ModelSelection extends React.Component {
     }
 
     set_display_to_kmeans = () => {
-        this.state.parameters_to_display = <KMeansParameters
-            on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
-            n_clusters_value={this.state.k_means_n_clusters}
-        />
+        this.setState({ parameters_to_display: this.get_kmeans_state_parameters() })
     }
 
     set_display_to_tabularncd = () => {
-        this.state.parameters_to_display = <TabularNCDParameters
-            on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
-            tabncd_n_clusters_value={this.state.tabncd_n_clusters}
-            on_tabncd_cosine_topk_change={this.on_tabncd_cosine_topk_change}
-            tabncd_cosine_topk_value={this.state.tabncd_cosine_topk}
-            on_tabncd_w1_change={this.on_tabncd_w1_change}
-            tabncd_w1_value={this.state.tabncd_w1}
-            on_tabncd_w2_change={this.on_tabncd_w2_change}
-            tabncd_w2_value={this.state.tabncd_w2}
-            on_tabncd_classifier_lr_change={this.on_tabncd_classifier_lr_change}
-            tabncd_classifier_lr_value={this.state.tabncd_classifier_lr}
-            on_tabncd_cluster_lr_change={this.on_tabncd_cluster_lr_change}
-            tabncd_cluster_lr_value={this.state.tabncd_cluster_lr}
-            on_tabncd_k_neighbors_change={this.on_tabncd_k_neighbors_change}
-            tabncd_k_neighbors_value={this.state.tabncd_k_neighbors}
-            on_tabncd_dropout_change={this.on_tabncd_dropout_change}
-            tabncd_dropout_value={this.state.tabncd_dropout}
-            on_tabncd_activation_fct_change={this.on_tabncd_activation_fct_change}
-            tabncd_activation_fct_value={this.state.tabncd_activation_fct}
-        />
+        this.setState({ parameters_to_display: this.get_tabularncd_state_parameters() })
+    }
+
+    get_kmeans_state_parameters = () => {
+        return (
+            <KMeansParameters
+                on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
+                n_clusters_value={this.state.k_means_n_clusters}
+            />
+        )
+    }
+
+    get_tabularncd_state_parameters = () => {
+        return (
+            <TabularNCDParameters
+                on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
+                tabncd_n_clusters_value={this.state.tabncd_n_clusters}
+                on_tabncd_cosine_topk_change={this.on_tabncd_cosine_topk_change}
+                tabncd_cosine_topk_value={this.state.tabncd_cosine_topk}
+                on_tabncd_w1_change={this.on_tabncd_w1_change}
+                tabncd_w1_value={this.state.tabncd_w1}
+                on_tabncd_w2_change={this.on_tabncd_w2_change}
+                tabncd_w2_value={this.state.tabncd_w2}
+                on_tabncd_classifier_lr_change={this.on_tabncd_classifier_lr_change}
+                tabncd_classifier_lr_value={this.state.tabncd_classifier_lr}
+                on_tabncd_cluster_lr_change={this.on_tabncd_cluster_lr_change}
+                tabncd_cluster_lr_value={this.state.tabncd_cluster_lr}
+                on_tabncd_k_neighbors_change={this.on_tabncd_k_neighbors_change}
+                tabncd_k_neighbors_value={this.state.tabncd_k_neighbors}
+                on_tabncd_dropout_change={this.on_tabncd_dropout_change}
+                tabncd_dropout_value={this.state.tabncd_dropout}
+                on_tabncd_activation_fct_change={this.on_tabncd_activation_fct_change}
+                tabncd_activation_fct_value={this.state.tabncd_activation_fct}
+            />
+        )
     }
 
     onDropDownChange = event => {
         this.setState({ selected_model: event.target.value });
 
-        console.log("Selected model " + event.target.value)
-
         if (event.target.value === "k_means") {
             this.set_display_to_kmeans()
         }
-
         if (event.target.value === "tabularncd") {
             this.set_display_to_tabularncd()
         }
-
         if (event.target.value === "...") {
-            this.state.parameters_to_display = <p>Unimplemented model</p>
+            this.setState({parameters_to_display : <p>Unimplemented model</p>})
         }
-
     };
 
     onRunButtonClick = () => (
