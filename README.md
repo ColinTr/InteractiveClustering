@@ -5,16 +5,20 @@
 1) Clone the repository by running `git clone https://github.com/ColinTr/InteractiveClustering`
 
 2) Create and activate a new [Python 3.10.6](https://www.python.org/downloads/release/python-3106/) virtual environment for the backend:
-> python -m venv interactive_clustering_backend/venv
-
-> # For Windows:
-> interactive_clustering_backend\venv\Scripts\activate
-> # For Linux/Mac:
-> source interactive_clustering_backend/venv/bin/activate
+```bash
+python -m venv interactive_clustering_backend/venv
+```
+```bash
+# For Windows:
+interactive_clustering_backend\venv\Scripts\activate
+# For Linux/Mac:
+source interactive_clustering_backend/venv/bin/activate
+```
 
 3) Install the Python dependencies:
-> python -m pip install -r requirements.txt
-
+```bash
+python -m pip install -r requirements.txt
+```
 
 4) *ToDo : describe the process for starting the React.js client*
 
