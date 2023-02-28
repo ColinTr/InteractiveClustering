@@ -9,6 +9,8 @@ import AgglomerativeClustering from "./components/AgglomerativeClustering";
 import ModelSelection from "./components/ModelSelection";
 
 
+document.body.style.backgroundColor = "#22223b";
+
 function App() {
   return (
     <div className="App">
