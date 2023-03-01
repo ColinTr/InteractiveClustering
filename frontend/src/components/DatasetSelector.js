@@ -25,8 +25,11 @@ function fireSwalError(title, text=null){
 
 class DatasetSelector extends React.Component {
 
-    state = {
-        selectedFile: null
+    constructor(props) {
+        super(props);
+        this.state = {
+            selectedFile: null
+        };
     }
 
     onFileChange = event => {
@@ -49,7 +52,8 @@ class DatasetSelector extends React.Component {
                     }
                     if (serverPromise.status === 200) {
                         serverPromise.json().then(response => {
-                            console.log(response['file_header'])
+                            // The features we just received from the server are sent to the FullPage.js component
+                            this.props.onNewFeaturesLoaded(response['file_header'])
                         })
                     }
                 })

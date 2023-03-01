@@ -8,6 +8,7 @@ import Button from 'react-bootstrap/Button';
 
 
 class AgglomerativeClustering extends React.Component {
+
     constructor(props) {
         super(props);
         this.state = {

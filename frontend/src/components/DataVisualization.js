@@ -7,6 +7,7 @@ import {AutoSizer} from "react-virtualized";
 
 
 class DataVisualization extends React.Component {
+
     constructor(props) {
         super(props);
         this.state = {
