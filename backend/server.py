@@ -12,11 +12,6 @@ def _corsify_actual_response(response):
     return response
 
 
-@app.route('/members')
-def members():
-    return {"members": ["Member1", "Member2", "Member3"]}
-
-
 @app.route('/getFileHeader', methods=['POST'])
 def getFile():
     data = request.get_json()

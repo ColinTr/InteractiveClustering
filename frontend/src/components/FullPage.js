@@ -7,27 +7,7 @@ import DataVisualization from "./DataVisualization";
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import Container from "react-bootstrap/Container";
-import Form from "react-bootstrap/Form";
 
-const mock_features = [
-    {feature_name: "f1"}, {feature_name: "f2"},
-    {feature_name: "f3"}, {feature_name: "f4"},
-    {feature_name: "f5"}, {feature_name: "f6"},
-    {feature_name: "f7"}, {feature_name: "f8"},
-    {feature_name: "f9"}, {feature_name: "f10"},
-    {feature_name: "f11"}, {feature_name: "f12"},
-    {feature_name: "f13"}, {feature_name: "f14"},
-    {feature_name: "f15"}, {feature_name: "f16"},
-    {feature_name: "f17"}, {feature_name: "f18"},
-    {feature_name: "f19"}, {feature_name: "f20"},
-    {feature_name: "f21"}, {feature_name: "f22"},
-    {feature_name: "f23"}, {feature_name: "f24"},
-    {feature_name: "f25"}, {feature_name: "f26"},
-    {feature_name: "f27"}, {feature_name: "f28"},
-    {feature_name: "f29"}, {feature_name: "f30"},
-    {feature_name: "f31"}, {feature_name: "f32"},
-    {feature_name: "f33"}
-];
 
 class FullPage extends React.Component {
 

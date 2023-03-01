@@ -27,7 +27,7 @@ class FeatureSelection extends React.Component {
                         <Form.Check
                             type="checkbox"
                             id={"checkbox" + feature.name}
-                            label={"Feature " + feature.name}
+                            label={feature.name}
                             key={feature.name}
                             onChange={() => this.props.onChangeCheckbox(feature.index)}
                             checked={feature.checked}
