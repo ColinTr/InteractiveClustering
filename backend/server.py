@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 
-def _corsify_actual_response(response):
+def corsify_response(response):
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
@@ -20,7 +20,7 @@ def getFile():
 
     file_header = {"file_header": pd.read_csv(file_path, nrows=1).columns.tolist()}
 
-    return _corsify_actual_response(jsonify(file_header))
+    return corsify_response(jsonify(file_header))
 
 
 if __name__ == '__main__':

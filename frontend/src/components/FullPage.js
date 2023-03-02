@@ -7,17 +7,19 @@ import DataVisualization from "./DataVisualization";
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import Container from "react-bootstrap/Container";
+import fireSwalError from "./swal_functions";
 
 
 class FullPage extends React.Component {
-
     constructor(props) {
         super(props);
         this.state = {
             // The states of the children that need to be shared are "lifted" here
             formatted_features : null,  // mock_features.map((feature, index) => ({"name": feature.feature_name, "checked" : true, index : index}))
             search_query: '',
-            search_filtered_list : null
+            search_filtered_list : null,
+            ground_truth_radio_button_disabled : true,
+            prediction_radio_button_disabled : true
         };
     }
 
@@ -90,6 +92,30 @@ class FullPage extends React.Component {
         this.setState({search_filtered_list: updated_filtered_list, search_query: ''})  // And finally replace the array in the state
     }
 
+    onRawDataButtonClick = () => {
+        if(this.state.formatted_features == null){
+            fireSwalError("Please load a dataset to visualize")
+        } else {
+            console.log("ToDo : launch T-SNE of raw data with Flask server...")
+        }
+    }
+
+    onProjectionButtonClick = () => {
+        if(this.state.formatted_features == null){
+            fireSwalError("Please load a dataset to visualize")
+        } else {
+            console.log("ToDo : launch T-SNE of projected data with Flask server...")
+        }
+    }
+
+    onGroundTruthRadioButtonChange = () => {
+        console.log("Color image with the ground-truth of the classes")
+    }
+
+    onPredictionRadioButtonChange = () => {
+        console.log("Color image with the prediction of the model")
+    }
+
     render() {
         return (
             <Container style={{height: '100vh'}}>
@@ -106,7 +132,12 @@ class FullPage extends React.Component {
 
                     <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "80vh"}}>
                         <Row className="my_row mx-1 py-2 d-flex flex-row" style={{flexGrow:'1'}}>
-                            <DataVisualization/>
+                            <DataVisualization onRawDataButtonClick={this.onRawDataButtonClick}
+                                               onProjectionButtonClick={this.onProjectionButtonClick}
+                                               onGroundTruthRadioButtonChange={this.onGroundTruthRadioButtonChange}
+                                               onPredictionRadioButtonChange={this.onPredictionRadioButtonChange}
+                                               ground_truth_radio_button_disabled={this.state.ground_truth_radio_button_disabled}
+                                               prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}/>
                         </Row>
                         <Row className="my_row mx-1 py-2">
                             <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded} />

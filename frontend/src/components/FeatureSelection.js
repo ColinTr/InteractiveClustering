@@ -24,14 +24,25 @@ class FeatureSelection extends React.Component {
             return (
                 <Container>
                     {this.props.search_filtered_list.map((feature) => (
-                        <Form.Check
-                            type="checkbox"
-                            id={"checkbox" + feature.name}
-                            label={feature.name}
-                            key={feature.name}
-                            onChange={() => this.props.onChangeCheckbox(feature.index)}
-                            checked={feature.checked}
-                        />
+                        <Row className="d-flex flex-row" key={"row_" + feature.name}>
+                            <Col className="d-flex flex-column col-1">
+                                <div className="form-check">
+                                    <input className="form-check-input"
+                                           type="radio"
+                                           name="classFeatureRadio"
+                                           key={"class_radio_" + feature.name}/>
+                                </div>
+                            </Col>
+                            <Col className="d-flex flex-column">
+                                <Form.Check
+                                    type="checkbox"
+                                    label={feature.name}
+                                    onChange={() => this.props.onChangeCheckbox(feature.index)}
+                                    checked={feature.checked}
+                                    key={"checkbox_" + feature.name}
+                                />
+                            </Col>
+                        </Row>
                     ))}
                 </Container>
             )
