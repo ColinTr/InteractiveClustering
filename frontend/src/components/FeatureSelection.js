@@ -20,17 +20,19 @@ const StyledTextField = styled(TextField)({
 
 class FeatureSelection extends React.Component {
     features_list = () => {
-        if(this.props.search_filtered_list != null) {
+        if(this.props.search_filtered_features_list != null) {
             return (
                 <Container>
-                    {this.props.search_filtered_list.map((feature) => (
+                    {this.props.search_filtered_features_list.map((feature) => (
                         <Row className="d-flex flex-row" key={"row_" + feature.name}>
                             <Col className="d-flex flex-column col-1">
                                 <div className="form-check">
                                     <input className="form-check-input"
                                            type="radio"
+                                           onChange={() => this.props.onFeatureRadioButtonChange(feature.name)}
                                            name="classFeatureRadio"
-                                           key={"class_radio_" + feature.name}/>
+                                           key={"class_radio_" + feature.name}
+                                    />
                                 </div>
                             </Col>
                             <Col className="d-flex flex-column">
@@ -49,9 +51,46 @@ class FeatureSelection extends React.Component {
         } else {
             return (
                 <Container>
-                    <i>No features to display...</i>
+                    <i>Load a dataset to start exploring features</i>
                 </Container>
             )
+        }
+    }
+
+    values_list = () => {
+        if(this.props.search_filtered_unique_values_list != null) {
+            return (
+                <Container>
+                    {this.props.search_filtered_unique_values_list.map((feature) => (
+                        <div className="form-check form-switch" key={"div_switch_" + feature.name}>
+                            <input className="form-check-input"
+                                   type="checkbox"
+                                   key={"switch_" + feature.name}
+                                   id={"switch_" + feature.name}
+                                   onChange={() => this.props.onUniqueValueSwitchChange(feature.index)}
+                                   checked={feature.checked}
+                            />
+                            <label className="form-check-label" htmlFor={"switch_" + feature.name}>
+                                {feature.name}
+                            </label>
+                        </div>
+                    ))}
+                </Container>
+            )
+        } else {
+            if(this.props.search_filtered_features_list == null){
+                return (
+                    <Container>
+                        <i>Load a dataset to start exploring class values</i>
+                    </Container>
+                )
+            } else {
+                return (
+                    <Container>
+                        <i>Select one of the features as class</i>
+                    </Container>
+                )
+            }
         }
     }
 
@@ -60,52 +99,102 @@ class FeatureSelection extends React.Component {
             <Container>
                 <Col className="d-flex flex-column" style={{height: '100%', paddingLeft: "6px", paddingRight: "6px"}}>
 
-                    <Row className="d-flex flex-row">
+                    <Row className="d-flex flex-row" style={{paddingBottom: "5px"}}>
                         <h5>Feature selection</h5>
                     </Row>
 
-                    <Row className="d-flex flex-row" style={{paddingTop: "10px"}}>
+                    <Row className="d-flex flex-row">
                         <Col>
                             <StyledTextField
-                                id="outlined-basic"
+                                id="outlined-basic1"
                                 variant="outlined"
                                 fullWidth
                                 label="Search"
-                                value={this.props.search_query}
-                                onChange={this.props.onChangeSearch}
+                                value={this.props.feature_search_query}
+                                onChange={this.props.onChangeFeaturesSearch}
                                 sx={{ input: { color: 'white'} }}
                             />
                         </Col>
                     </Row>
 
-                    <Row style={{flexDirection:"row", paddingTop: "10px"}}>
+                    <Row style={{flexDirection:"row", paddingTop: "10px", paddingBottom: "10px"}}>
                         <Col style={{paddingLeft:12, paddingRight:5}} className="d-flex flex-column justify-content-end">
                             <button type="button" className="btn btn-secondary"
                                     style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}}
-                                    onClick={() => this.props.onCheckButtonClick()}>
+                                    onClick={() => this.props.onCheckAllButtonClick()}>
                                 Check all
                             </button>
                         </Col>
                         <Col style={{paddingLeft:5, paddingRight:5}} className="d-flex flex-column justify-content-end">
                             <button type="button" className="btn btn-secondary"
                                     style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}}
-                                    onClick={() => this.props.onUncheckButtonClick()}>
+                                    onClick={() => this.props.onUncheckAllButtonClick()}>
                                 Uncheck all
                             </button>
                         </Col>
                         <Col style={{paddingLeft:5, paddingRight:12}} className="d-flex flex-column justify-content-end">
                             <button type="button" className="btn btn-secondary"
                                     style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}}
-                                    onClick={() => this.props.onClearSearchButtonClick()}>
+                                    onClick={() => this.props.onClearFeaturesSearchButtonClick()}>
                                 Clear search
                             </button>
                         </Col>
                     </Row>
 
-                    <hr/>
-
                     <Row className="d-flex flex-row" style={{overflowY: "auto", flex:"1 1 auto", height: '0px'}}>
                         {this.features_list()}
+                    </Row>
+
+                    <hr/>
+
+                    <Row className="d-flex flex-row" style={{paddingBottom: "5px"}}>
+                        <h5>Class modalities</h5>
+                    </Row>
+
+                    <Row className="d-flex flex-row">
+                        <Col>
+                            <Row className="d-flex flex-row">
+                                <Col>
+                                    <StyledTextField
+                                        id="outlined-basic2"
+                                        variant="outlined"
+                                        fullWidth
+                                        label="Search"
+                                        value={this.props.unique_values_search_query}
+                                        onChange={this.props.onChangeUniqueValuesSearch}
+                                        sx={{ input: { color: 'white'} }}
+                                    />
+                                </Col>
+                            </Row>
+                        </Col>
+                    </Row>
+
+                    <Row style={{flexDirection:"row", paddingTop: "10px", paddingBottom: "10px"}}>
+                        <Col style={{paddingLeft:12, paddingRight:5}} className="d-flex flex-column justify-content-end">
+                            <button type="button" className="btn btn-secondary"
+                                    style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}}
+                                    onClick={() => this.props.onSwitchAllOnButtonClick()}>
+                                Switch all on
+                            </button>
+                        </Col>
+                        <Col style={{paddingLeft:5, paddingRight:5}} className="d-flex flex-column justify-content-end">
+                            <button type="button" className="btn btn-secondary"
+                                    style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}}
+                                    onClick={() => this.props.onSwitchAllOffButtonClick()}>
+                                Switch all off
+                            </button>
+                        </Col>
+                        <Col style={{paddingLeft:5, paddingRight:12}} className="d-flex flex-column justify-content-end">
+                            <button type="button" className="btn btn-secondary"
+                                    style={{paddingTop:0, paddingBottom:0, paddingLeft:"5px", paddingRight:"5px", fontSize: "small"}}
+                                    onClick={() => this.props.onClearUniqueValuesSearchButtonClick()}>
+                                Clear search
+                            </button>
+                        </Col>
+                    </Row>
+
+                    <Row className="d-flex flex-row" style={{overflowY: "auto", flex:"1 1 auto", height: '0px'}}>
+                        {this.values_list()}
                     </Row>
 
                 </Col>

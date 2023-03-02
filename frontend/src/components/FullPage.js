@@ -15,27 +15,41 @@ class FullPage extends React.Component {
         super(props);
         this.state = {
             // The states of the children that need to be shared are "lifted" here
-            formatted_features : null,  // mock_features.map((feature, index) => ({"name": feature.feature_name, "checked" : true, index : index}))
-            search_query: '',
-            search_filtered_list : null,
+            formatted_features : null,
+            feature_search_query: '',
+            search_filtered_features_list : null,
+
             ground_truth_radio_button_disabled : true,
-            prediction_radio_button_disabled : true
+            prediction_radio_button_disabled : true,
+
+            class_values_to_display: null,
+            unique_values_search_query: '',
+            search_filtered_unique_values_list : null,
         };
     }
 
     onNewFeaturesLoaded = (new_features) => {
         const new_formatted_features = new_features.map((feature, index) => ({"name": feature, "checked" : true, index : index}))
         this.setState({formatted_features: new_formatted_features})
-        this.setState({search_filtered_list: this.getUpdatedFilteredList(new_formatted_features, this.state.search_query)})
+        this.setState({search_filtered_features_list: this.getUpdatedFilteredList(new_formatted_features, this.state.feature_search_query)})
     }
 
-    onChangeSearch = query => {
+    onChangeFeaturesSearch = query => {
         if (query.target.value !== '') {
-            this.setState({ search_query: query.target.value });
+            this.setState({ feature_search_query: query.target.value });
         }
 
         const updated_filtered_list = this.getUpdatedFilteredList(this.state.formatted_features, query.target.value)
-        this.setState({ search_filtered_list: updated_filtered_list })
+        this.setState({ search_filtered_features_list: updated_filtered_list })
+    };
+
+    onChangeUniqueValuesSearch = query => {
+        if (query.target.value !== '') {
+            this.setState({ unique_values_search_query: query.target.value });
+        }
+
+        const updated_filtered_list = this.getUpdatedFilteredList(this.state.class_values_to_display, query.target.value)
+        this.setState({ search_filtered_unique_values_list: updated_filtered_list })
     };
 
     getUpdatedFilteredList = (features_list, query) => {
@@ -50,7 +64,6 @@ class FullPage extends React.Component {
         } else {
             return null
         }
-
     }
 
     onChangeCheckbox = i => {
@@ -59,37 +72,76 @@ class FullPage extends React.Component {
         formatted_features_item.checked = !formatted_features_item.checked  // Change it
         formatted_features[i] = formatted_features_item // Replace it in the array's copy
 
-        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.search_query)
-        this.setState({formatted_features: formatted_features, search_filtered_list: updated_filtered_list})  // And finally replace the array in the state
+        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
+        this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
     }
 
-    onUncheckButtonClick = () => {
+    onUniqueValueSwitchChange = i => {
+        let class_values_to_display = [...this.state.class_values_to_display];  // Make a shallow copy
+        let class_values_to_display_item = {...class_values_to_display[i]};  // Get the element we want to update
+        class_values_to_display_item.checked = !class_values_to_display_item.checked  // Change it
+        class_values_to_display[i] = class_values_to_display_item // Replace it in the array's copy
+
+        const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
+        this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
+    }
+
+    onSwitchAllOnButtonClick = () => {
+        if (this.state.class_values_to_display != null) {
+            let class_values_to_display = [...this.state.class_values_to_display];  // Make a shallow copy
+            this.state.search_filtered_unique_values_list.map((feature) => (  // For each feature currently displayed...
+                class_values_to_display[feature.index].checked = true
+            ))
+
+            const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
+            this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
+        }
+    }
+
+    onSwitchAllOffButtonClick = () => {
+        if (this.state.class_values_to_display != null) {
+            let class_values_to_display = [...this.state.class_values_to_display];  // Make a shallow copy
+            this.state.search_filtered_unique_values_list.map((feature) => (  // For each feature currently displayed...
+                class_values_to_display[feature.index].checked = false
+            ))
+
+            const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
+            this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
+        }
+    }
+
+    onUncheckAllButtonClick = () => {
         if (this.state.formatted_features != null) {
             let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
-            this.state.search_filtered_list.map((feature) => (  // For each feature currently displayed...
+            this.state.search_filtered_features_list.map((feature) => (  // For each feature currently displayed...
                 formatted_features[feature.index].checked = false
             ))
 
-            const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.search_query)
-            this.setState({formatted_features: formatted_features, search_filtered_list: updated_filtered_list})  // And finally replace the array in the state
+            const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
+            this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
         }
     }
 
-    onCheckButtonClick = () => {
+    onCheckAllButtonClick = () => {
         if (this.state.formatted_features != null) {
             let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
-            this.state.search_filtered_list.map((feature) => (  // For each feature currently displayed...
+            this.state.search_filtered_features_list.map((feature) => (  // For each feature currently displayed...
                 formatted_features[feature.index].checked = true
             ))
 
-            const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.search_query)
-            this.setState({formatted_features: formatted_features, search_filtered_list: updated_filtered_list})  // And finally replace the array in the state
+            const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
+            this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
         }
     }
 
-    onClearSearchButtonClick = () => {
+    onClearFeaturesSearchButtonClick = () => {
         const updated_filtered_list = this.getUpdatedFilteredList(this.state.formatted_features, '')
-        this.setState({search_filtered_list: updated_filtered_list, search_query: ''})  // And finally replace the array in the state
+        this.setState({search_filtered_features_list: updated_filtered_list, feature_search_query: ''})  // And finally replace the array in the state
+    }
+
+    onClearUniqueValuesSearchButtonClick = () => {
+        const updated_filtered_list = this.getUpdatedFilteredList(this.state.class_values_to_display, '')
+        this.setState({search_filtered_unique_values_list: updated_filtered_list, unique_values_search_query: ''})
     }
 
     onRawDataButtonClick = () => {
@@ -114,6 +166,28 @@ class FullPage extends React.Component {
 
     onPredictionRadioButtonChange = () => {
         console.log("Color image with the prediction of the model")
+    }
+
+    onFeatureRadioButtonChange = (feature_name) => {
+        // Send request to the Flask server to display the unique values of this feature
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({'feature_name': feature_name})
+        }
+        fetch('/getFeatureUniqueValues', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Internal server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.json().then(response => {
+                        const new_formatted_class_values = response['unique_values'].map((feature, index) => ({"name": feature, "checked" : true, index : index}))
+                        this.setState({class_values_to_display: new_formatted_class_values})
+                        this.setState({search_filtered_unique_values_list: this.getUpdatedFilteredList(new_formatted_class_values, this.state.unique_values_search_query)})
+                    })
+                }
+            })
     }
 
     render() {
@@ -146,13 +220,25 @@ class FullPage extends React.Component {
 
                     <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "80vh"}}>
                         <Row className="my_row py-2" style={{flexGrow:'1'}}>
-                            <FeatureSelection search_query={this.state.search_query}
-                                              onChangeSearch={this.onChangeSearch}
-                                              search_filtered_list={this.state.search_filtered_list}
-                                              onCheckButtonClick={this.onCheckButtonClick}
-                                              onUncheckButtonClick={this.onUncheckButtonClick}
-                                              onClearSearchButtonClick={this.onClearSearchButtonClick}
-                                              onChangeCheckbox={this.onChangeCheckbox}/>
+                            <FeatureSelection feature_search_query={this.state.feature_search_query}
+                                              onChangeFeaturesSearch={this.onChangeFeaturesSearch}
+                                              search_filtered_features_list={this.state.search_filtered_features_list}
+
+                                              onClearFeaturesSearchButtonClick={this.onClearFeaturesSearchButtonClick}
+                                              onCheckAllButtonClick={this.onCheckAllButtonClick}
+                                              onUncheckAllButtonClick={this.onUncheckAllButtonClick}
+                                              onChangeCheckbox={this.onChangeCheckbox}
+                                              onFeatureRadioButtonChange={this.onFeatureRadioButtonChange}
+
+                                              unique_values_search_query={this.state.unique_values_search_query}
+                                              onChangeUniqueValuesSearch={this.onChangeUniqueValuesSearch}
+                                              search_filtered_unique_values_list={this.state.search_filtered_unique_values_list}
+
+                                              onClearUniqueValuesSearchButtonClick={this.onClearUniqueValuesSearchButtonClick}
+                                              onSwitchAllOnButtonClick={this.onSwitchAllOnButtonClick}
+                                              onSwitchAllOffButtonClick={this.onSwitchAllOffButtonClick}
+                                              onUniqueValueSwitchChange={this.onUniqueValueSwitchChange}
+                            />
                         </Row>
                     </Col>
 
