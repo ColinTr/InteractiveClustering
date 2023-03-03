@@ -35,6 +35,8 @@ class DatasetSelector extends React.Component {
                         serverPromise.json().then(response => {
                             // The features we just received from the server are sent to the FullPage.js component
                             this.props.onNewFeaturesLoaded(response['file_header'])
+                            const dataset_name = this.state.selectedFile.replace(/\.[^/.]+$/, "")
+                            this.props.setDatasetNameHandler(dataset_name)
                         })
                     }
                 })

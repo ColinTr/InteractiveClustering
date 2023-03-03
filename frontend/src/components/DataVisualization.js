@@ -6,6 +6,18 @@ import Button from "react-bootstrap/Button";
 
 
 class DataVisualization extends React.Component {
+    img_display = () => {
+        if(this.props.image_to_display == null){
+            return (
+                <i>Load a dataset to visualize</i>
+            )
+        } else {
+            return (
+                <img src={this.props.image_to_display} alt="T-SNE of the data"/>
+            )
+        }
+    }
+
     render() {
         return (
             <Container>
@@ -14,7 +26,7 @@ class DataVisualization extends React.Component {
                         <h5>Data visualization</h5>
                     </Row>
                     <Row className="d-flex flex-row" style={{flexGrow:'1', overflowY: "auto"}}>
-                        <i>Content row...</i>
+                        {this.img_display()}
                     </Row>
                     <Row className="d-flex flex-row" style={{paddingLeft: "6px", paddingRight: "6px"}}>
                         <Col className="d-flex flex-column">

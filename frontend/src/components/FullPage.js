@@ -15,6 +15,8 @@ class FullPage extends React.Component {
         super(props);
         this.state = {
             // The states of the children that need to be shared are "lifted" here
+            dataset_name : null,
+
             formatted_features : null,
             feature_search_query: '',
             search_filtered_features_list : null,
@@ -22,9 +24,12 @@ class FullPage extends React.Component {
             ground_truth_radio_button_disabled : true,
             prediction_radio_button_disabled : true,
 
+            selected_class_feature: null,
             class_values_to_display: null,
             unique_values_search_query: '',
             search_filtered_unique_values_list : null,
+
+            image_to_display: null,
         };
     }
 
@@ -148,7 +153,43 @@ class FullPage extends React.Component {
         if(this.state.formatted_features == null){
             fireSwalError("Please load a dataset to visualize")
         } else {
-            console.log("ToDo : launch T-SNE of raw data with Flask server...")
+            if(this.state.selected_class_feature == null){
+                fireSwalError("Please select a target feature")
+            } else {
+                const selected_features = []
+                this.state.formatted_features.forEach(feature => {
+                    if(feature.checked === true && feature.name !== this.state.selected_class_feature){
+                        selected_features.push(feature.name)
+                    }
+                })
+
+                const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        'dataset_name': this.state.dataset_name,
+                        'selected_features': selected_features,
+                        'target_name': this.state.selected_class_feature,
+                        'tsne_seed' : 0,
+                        'tsne_perplexity': 30.0,
+                        'known_classes': [],
+                        'unknown_classes': [],
+                        'color_by': 'known_only'
+                    })
+                }
+                fetch('/getDatasetTSNE', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+                    .then(serverPromise => {
+                        if (serverPromise.status === 500) {
+                            fireSwalError('Status 500 - Internal server error', 'Please make sure that the server is running')
+                        }
+                        if (serverPromise.status === 200) {
+                            serverPromise.blob().then(image_response_blob => {
+                                const imageObjectURL = URL.createObjectURL(image_response_blob);
+                                this.setState({image_to_display: imageObjectURL})
+                            })
+                        }
+                    })
+            }
         }
     }
 
@@ -156,7 +197,11 @@ class FullPage extends React.Component {
         if(this.state.formatted_features == null){
             fireSwalError("Please load a dataset to visualize")
         } else {
-            console.log("ToDo : launch T-SNE of projected data with Flask server...")
+            if(this.state.selected_class_feature == null){
+                fireSwalError("Please select a target feature")
+            } else {
+                console.log("ToDo : launch T-SNE of raw data with Flask server...")
+            }
         }
     }
 
@@ -182,12 +227,17 @@ class FullPage extends React.Component {
                 }
                 if (serverPromise.status === 200) {
                     serverPromise.json().then(response => {
+                        this.setState({selected_class_feature: feature_name})
                         const new_formatted_class_values = response['unique_values'].map((feature, index) => ({"name": feature, "checked" : true, index : index}))
                         this.setState({class_values_to_display: new_formatted_class_values})
                         this.setState({search_filtered_unique_values_list: this.getUpdatedFilteredList(new_formatted_class_values, this.state.unique_values_search_query)})
                     })
                 }
             })
+    }
+
+    setDatasetNameHandler = (dataset_name) => {
+        this.setState({dataset_name: dataset_name})
     }
 
     render() {
@@ -206,7 +256,8 @@ class FullPage extends React.Component {
 
                     <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "80vh"}}>
                         <Row className="my_row mx-1 py-2 d-flex flex-row" style={{flexGrow:'1'}}>
-                            <DataVisualization onRawDataButtonClick={this.onRawDataButtonClick}
+                            <DataVisualization image_to_display={this.state.image_to_display}
+                                               onRawDataButtonClick={this.onRawDataButtonClick}
                                                onProjectionButtonClick={this.onProjectionButtonClick}
                                                onGroundTruthRadioButtonChange={this.onGroundTruthRadioButtonChange}
                                                onPredictionRadioButtonChange={this.onPredictionRadioButtonChange}
@@ -214,7 +265,8 @@ class FullPage extends React.Component {
                                                prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}/>
                         </Row>
                         <Row className="my_row mx-1 py-2">
-                            <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded} />
+                            <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
+                                             setDatasetNameHandler={this.setDatasetNameHandler}/>
                         </Row>
                     </Col>
 

@@ -20,4 +20,9 @@ frontend/node_modules
 /frontend/build
 
 backend/.idea
-backend/venv
+backend/venv/*
+backend/results/images_folder/*
+!backend/results/images_folder/.gitkeep
+backend/results/tsne_arrays/*
+!backend/results/tsne_arrays/.gitkeep
+backend/results/results_dict.json

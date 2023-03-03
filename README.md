@@ -23,7 +23,7 @@ source backend/venv/bin/activate
 ```bash
 # Install PyTorch with CUDA:
 pip install torch --extra-index-url https://download.pytorch.org/whl/cu113
-# check if torch supports GPU (you need CUDA 11 installed):
+# Check if torch supports GPU (you need CUDA 11 installed):
 python -c "import torch; print(torch.cuda.is_available())"
 # Install the rest of the requirements:
 python -m pip install -r requirements.txt
