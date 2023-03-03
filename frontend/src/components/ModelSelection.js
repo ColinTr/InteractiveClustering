@@ -7,6 +7,7 @@ import Row from "react-bootstrap/Row";
 import KMeansParameters from "./models_parameters/KMeansParameters";
 import TabularNCDParameters from "./models_parameters/TabularNCDParameters";
 import '../App.css';
+import fireSwalError from "./swal_functions";
 
 class ModelSelection extends React.Component {
 
@@ -145,13 +146,15 @@ class ModelSelection extends React.Component {
         }
     };
 
-    onRunButtonClick = () => (
+    onRunButtonClick = () => {
         console.log("ToDo run model " + this.state.selected_model)
-    )
+        fireSwalError("Not implemented yet!")
+    }
 
-    onAutoParamsButtonClick = () => (
+    onAutoParamsButtonClick = () => {
         console.log("ToDo auto params for " + this.state.selected_model)
-    )
+        fireSwalError("Not implemented yet!")
+    }
 
     render() {
         return (

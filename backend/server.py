@@ -40,7 +40,7 @@ def getFeatureUniqueValues():
         data = request.get_json()
         feature_name = data['feature_name']
         unique_values = dataset[feature_name].unique()
-        return corsify_response(jsonify({"unique_values": unique_values.tolist()}))
+        return corsify_response(jsonify({"unique_values": unique_values.tolist()})), 200
     else:
         return "Dataset not loaded", 400
 
@@ -151,7 +151,7 @@ def getDatasetTSNE():
 
             image_filename = image_datetime_string + '.png'
 
-            fig = Figure()
+            fig = Figure(figsize=(8, 8))
             axis = fig.add_subplot(1, 1, 1)
             target_array = np.array(dataset[target_name])
             target_array = [target if target in known_classes else "Unknown" for target in target_array]
@@ -171,6 +171,11 @@ def getDatasetTSNE():
             return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
     else:
         return "Dataset not loaded", 400
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error_message": str(error.original_exception)}), 422
 
 
 if __name__ == '__main__':

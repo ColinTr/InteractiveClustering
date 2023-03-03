@@ -5,6 +5,7 @@ import {Form} from "react-bootstrap";
 import RangeSlider from 'react-bootstrap-range-slider';
 import Container from "react-bootstrap/Container";
 import Button from 'react-bootstrap/Button';
+import fireSwalError from "./swal_functions";
 
 
 class AgglomerativeClustering extends React.Component {
@@ -18,6 +19,7 @@ class AgglomerativeClustering extends React.Component {
 
     onRunButtonClick = event => {
         console.log("ToDo: run agglomerative clustering with " + this.state.agglomerative_clustering_value + " clusters fusion")
+        fireSwalError("Not implemented yet!")
     };
 
     render() {

@@ -13,7 +13,10 @@ class DataVisualization extends React.Component {
             )
         } else {
             return (
-                <img src={this.props.image_to_display} alt="T-SNE of the data"/>
+                <img src={this.props.image_to_display}
+                     alt="T-SNE of the data"
+                     style={{width: "100%", height: "100%", objectFit: "contain"}}
+                />
             )
         }
     }
@@ -26,33 +29,33 @@ class DataVisualization extends React.Component {
                         <h5>Data visualization</h5>
                     </Row>
                     <Row className="d-flex flex-row" style={{flexGrow:'1', overflowY: "auto"}}>
-                        {this.img_display()}
+                        <center>
+                            {this.img_display()}
+                        </center>
                     </Row>
                     <Row className="d-flex flex-row" style={{paddingLeft: "6px", paddingRight: "6px"}}>
                         <Col className="d-flex flex-column">
-                            <Row>
+                            <Row className="d-flex flex-row "style={{paddingLeft: "12px"}}>
                                 Get T-SNE of the...
                             </Row>
-                            <Row>
-                                <Col>
-                                    <Button onClick={() => this.props.onRawDataButtonClick()}>
+                            <Row className="d-flex flex-row">
+                                <div style={{display: "flex"}}>
+                                    <Button onClick={() => this.props.onRawDataButtonClick()} style={{marginRight: "10px"}}>
                                         Raw data
                                     </Button>
-                                </Col>
-                                <Col>
                                     <Button onClick={() => this.props.onProjectionButtonClick()}>
                                         Projection
                                     </Button>
-                                </Col>
+                                </div>
                             </Row>
                         </Col>
-                        <Col className="d-flex flex-column" >
-                            <Row>
+                        <Col className="d-flex flex-column">
+                            <Row className="d-flex flex-row">
                                 Color with the...
                             </Row>
-                            <Row>
-                                <Col>
-                                    <div className="form-check">
+                            <Row className="d-flex flex-row">
+                                <div style={{display: "flex"}}>
+                                    <div className="form-check" style={{marginRight: "10px"}}>
                                         <input className="form-check-input" type="radio" name="flexRadio" id="flexRadioDefault1"
                                                checked
                                                onChange={this.props.onGroundTruthRadioButtonChange}
@@ -62,8 +65,6 @@ class DataVisualization extends React.Component {
                                             Ground truth
                                         </label>
                                     </div>
-                                </Col>
-                                <Col>
                                     <div className="form-check">
                                         <input className="form-check-input" type="radio" name="flexRadio" id="flexRadioDefault2"
                                                onChange={this.props.onPredictionRadioButtonChange}
@@ -72,7 +73,7 @@ class DataVisualization extends React.Component {
                                             Prediction
                                         </label>
                                     </div>
-                                </Col>
+                                </div>
                             </Row>
                         </Col>
                     </Row>

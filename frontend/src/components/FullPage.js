@@ -194,7 +194,12 @@ class FullPage extends React.Component {
                 fetch('/getDatasetTSNE', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
                     .then(serverPromise => {
                         if (serverPromise.status === 500) {
-                            fireSwalError('Status 500 - Internal server error', 'Please make sure that the server is running')
+                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                        }
+                        if (serverPromise.status === 422) {
+                            serverPromise.json().then(error => {
+                                fireSwalError('Status 422 - Server error', error['error_message'])
+                            })
                         }
                         if (serverPromise.status === 200) {
                             serverPromise.blob().then(image_response_blob => {
@@ -215,6 +220,7 @@ class FullPage extends React.Component {
                 fireSwalError("Please select a target feature")
             } else {
                 console.log("ToDo : launch T-SNE of raw data with Flask server...")
+                fireSwalError("Not implemented yet!")
             }
         }
     }
@@ -245,7 +251,12 @@ class FullPage extends React.Component {
         fetch('/getFeatureUniqueValues', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Internal server error', 'Please make sure that the server is running')
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
+                    })
                 }
                 if (serverPromise.status === 200) {
                     serverPromise.json().then(response => {
@@ -288,12 +299,14 @@ class FullPage extends React.Component {
                                                onGroundTruthRadioButtonChange={this.onGroundTruthRadioButtonChange}
                                                onPredictionRadioButtonChange={this.onPredictionRadioButtonChange}
                                                ground_truth_radio_button_disabled={this.state.ground_truth_radio_button_disabled}
-                                               prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}/>
+                                               prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}
+                            />
                         </Row>
                         <Row className="my_row mx-1 py-2">
                             <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
                                              setDatasetNameHandler={this.setDatasetNameHandler}
-                                             unloadDatasetHandler={this.unloadDatasetHandler}/>
+                                             unloadDatasetHandler={this.unloadDatasetHandler}
+                            />
                         </Row>
                     </Col>
 

@@ -35,7 +35,12 @@ class DatasetSelector extends React.Component {
             fetch('/getFileHeader', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
                 .then(serverPromise => {
                     if (serverPromise.status === 500) {
-                        fireSwalError('Status 500 - Internal server error', 'Please make sure that the server is running')
+                        fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    }
+                    if (serverPromise.status === 422) {
+                        serverPromise.json().then(error => {
+                            fireSwalError('Status 422 - Server error', error['error_message'])
+                        })
                     }
                     if (serverPromise.status === 200) {
                         serverPromise.json().then(response => {
