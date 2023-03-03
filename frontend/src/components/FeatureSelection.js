@@ -42,6 +42,7 @@ class FeatureSelection extends React.Component {
                                     onChange={() => this.props.onChangeCheckbox(feature.index)}
                                     checked={feature.checked}
                                     key={"checkbox_" + feature.name}
+                                    disabled={feature.disabled}
                                 />
                             </Col>
                         </Row>

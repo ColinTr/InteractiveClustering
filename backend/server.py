@@ -153,7 +153,9 @@ def getDatasetTSNE():
 
             fig = Figure()
             axis = fig.add_subplot(1, 1, 1)
-            sns.scatterplot(ax=axis, hue=dataset[target_name], x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]))
+            target_array = np.array(dataset[target_name])
+            target_array = [target if target in known_classes else "Unknown" for target in target_array]
+            sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_array)
             fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
             results_dict[dataset_name][corresponding_tsne_config_name]['images_config']['image_' + image_datetime_string] = {

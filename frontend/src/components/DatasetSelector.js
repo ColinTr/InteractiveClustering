@@ -9,7 +9,7 @@ class DatasetSelector extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            selectedFile: null
+            selectedFile: ""
         };
     }
 
@@ -17,8 +17,14 @@ class DatasetSelector extends React.Component {
         this.setState({ selectedFile: event.target.files[0].name })
     }
 
+    onDatasetUnload = () => {
+        this.setState({selectedFile: ""})
+        document.getElementById("my_input_file_form").value = "";
+        this.props.unloadDatasetHandler()
+    }
+
     onFileUpload = () => {
-        if (this.state.selectedFile == null){
+        if (this.state.selectedFile === ""){
             fireSwalError('Please select a file to load')
         } else {
             const requestOptions = {
@@ -51,11 +57,14 @@ class DatasetSelector extends React.Component {
                         <h5>Dataset selection</h5>
                     </Row>
                     <Row className="d-flex flex-row">
-                        <Col className="col-10 d-flex flex-column justify-content-center">
-                            <input type="file" onChange={this.onFileChange} style={{backgroundColor: "white", color: "black"}}/>
+                        <Col className="col-8 d-flex flex-column justify-content-center">
+                            <input type="file" onChange={this.onFileChange} style={{backgroundColor: "white", color: "black"}} id="my_input_file_form"/>
                         </Col>
                         <Col className="col-2 d-flex flex-column" style={{textAlign: "right"}}>
                             <button type="button" className="btn btn-primary" onClick={this.onFileUpload}>Load</button>
+                        </Col>
+                        <Col className="col-2 d-flex flex-column" style={{textAlign: "right"}}>
+                            <button type="button" className="btn btn-danger" onClick={this.onDatasetUnload}>Unload</button>
                         </Col>
                     </Row>
                 </Col>
