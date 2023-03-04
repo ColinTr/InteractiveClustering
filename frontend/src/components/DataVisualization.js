@@ -15,7 +15,7 @@ class DataVisualization extends React.Component {
             return (
                 <img src={this.props.image_to_display}
                      alt="T-SNE of the data"
-                     style={{height: "100%", width:"100%", objectFit: "contain"}}
+                     style={{height: "100%", width:"95%", objectFit: "contain"}}
                 />
             )
         }
