@@ -7,6 +7,7 @@ import DataVisualization from "./DataVisualization";
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import fireSwalError from "./swal_functions";
+import RulesGenerator from "./RulesGenerator";
 
 
 class FullPage extends React.Component {
@@ -21,15 +22,17 @@ class FullPage extends React.Component {
             feature_search_query: '',
             search_filtered_features_list : null,
 
-            ground_truth_radio_button_disabled : true,
-            prediction_radio_button_disabled : true,
-
             selected_class_feature: null,
             class_values_to_display: null,
             unique_values_search_query: '',
             search_filtered_unique_values_list : null,
 
             image_to_display: null,
+            show_model_prediction: false,
+
+            decision_tree_training_mode: "multi_class",
+            decision_tree_max_depth: null,
+            decision_tree_min_samples_split: 2,
         };
 
         this.state = this.initial_state;
@@ -224,14 +227,6 @@ class FullPage extends React.Component {
         }
     }
 
-    onGroundTruthRadioButtonChange = () => {
-        console.log("Color image with the ground-truth of the classes")
-    }
-
-    onPredictionRadioButtonChange = () => {
-        console.log("Color image with the prediction of the model")
-    }
-
     onFeatureRadioButtonChange = (feature_name) => {
         // Set the feature checkbox to true and disable it
         let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
@@ -276,6 +271,30 @@ class FullPage extends React.Component {
         this.setState(this.initial_state)
     }
 
+    onRulesRunButtonClick = () => {
+        fireSwalError("Not implemented yet!")
+    }
+
+    onSeeRulesButtonClick = () => {
+        fireSwalError("Not implemented yet!")
+    }
+
+    onDecisionTreeRadioButtonChange = (decision_tree_training_mode) => {
+        this.setState({decision_tree_training_mode: decision_tree_training_mode})
+    }
+
+    on_decision_tree_max_depth_change = (event) => {
+        this.setState({decision_tree_max_depth: event.target.value})
+    }
+
+    on_decision_tree_min_samples_split_change = (event) => {
+        this.setState({decision_tree_min_samples_split: event.target.value})
+    }
+
+    onShowModelPredictionSwitchChange = () => {
+        this.setState({show_model_prediction: !this.state.show_model_prediction})
+    }
+
     render() {
         return (
             <Row style={{height: '100vh', width:"90vw"}} className="d-flex flex-row justify-content-center align-items-center">
@@ -311,14 +330,13 @@ class FullPage extends React.Component {
                 </Col>
 
                 <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "95vh"}}>
-                    <Row className="my_row mx-lg-1 py-2 d-flex flex-row" style={{flexGrow:'1'}}>
+                    <Row className="my_row mx-lg-1 py-2 d-flex flex-row" style={{flexGrow:'1', height:"100%"}}>
                         <DataVisualization image_to_display={this.state.image_to_display}
                                            onRawDataButtonClick={this.onRawDataButtonClick}
                                            onProjectionButtonClick={this.onProjectionButtonClick}
-                                           onGroundTruthRadioButtonChange={this.onGroundTruthRadioButtonChange}
-                                           onPredictionRadioButtonChange={this.onPredictionRadioButtonChange}
-                                           ground_truth_radio_button_disabled={this.state.ground_truth_radio_button_disabled}
-                                           prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}
+
+                                           onShowModelPredictionSwitchChange={this.onShowModelPredictionSwitchChange}
+                                           show_model_prediction={this.state.show_model_prediction}
                         />
                     </Row>
                 </Col>
@@ -327,7 +345,21 @@ class FullPage extends React.Component {
                     <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
                         <ModelSelection />
                     </Row>
-                    <Row className="my_row py-1 d-flex flex-row">
+                    <Row className="my_row py-2 d-flex flex-row">
+                        <RulesGenerator onDecisionTreeRadioButtonChange={this.onDecisionTreeRadioButtonChange}
+                                        decision_tree_training_mode={this.state.decision_tree_training_mode}
+
+                                        on_decision_tree_max_depth_change={this.on_decision_tree_max_depth_change}
+                                        decision_tree_max_depth={this.state.decision_tree_max_depth}
+
+                                        on_decision_tree_min_samples_split_change={this.on_decision_tree_min_samples_split_change}
+                                        decision_tree_min_samples_split={this.state.decision_tree_min_samples_split}
+
+                                        onRulesRunButtonClick={this.onRulesRunButtonClick}
+                                        onSeeRulesButtonClick={this.onSeeRulesButtonClick}
+                        />
+                    </Row>
+                    <Row className="my_row py-2 d-flex flex-row">
                         <AgglomerativeClustering />
                     </Row>
                 </Col>

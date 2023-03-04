@@ -15,7 +15,7 @@ class DataVisualization extends React.Component {
             return (
                 <img src={this.props.image_to_display}
                      alt="T-SNE of the data"
-                     style={{width: "95%", height: "100%", objectFit: "contain"}}
+                     style={{height: "100%", width:"100%", objectFit: "contain"}}
                 />
             )
         }
@@ -23,12 +23,12 @@ class DataVisualization extends React.Component {
 
     render() {
         return (
-            <Container>
+            <Container style={{height:"100%"}}>
                 <Col className="d-flex flex-column" style={{height: '100%', paddingLeft: "6px", paddingRight: "6px"}}>
                     <Row className="d-flex flex-row">
                         <h5>Data visualization</h5>
                     </Row>
-                    <Row className="d-flex flex-row" style={{flexGrow:'1', overflowY: "auto"}}>
+                    <Row className="d-flex flex-row" style={{flexGrow:'1', overflowY: "auto", height:"100%"}}>
                         <center>
                             {this.img_display()}
                         </center>
@@ -50,29 +50,19 @@ class DataVisualization extends React.Component {
                             </Row>
                         </Col>
                         <Col className="d-flex flex-column">
-                            <Row className="d-flex flex-row">
-                                Color with the...
-                            </Row>
-                            <Row className="d-flex flex-row">
-                                <div style={{display: "flex"}}>
-                                    <div className="form-check" style={{marginRight: "10px"}}>
-                                        <input className="form-check-input" type="radio" name="flexRadio" id="flexRadioDefault1"
-                                               checked
-                                               onChange={this.props.onGroundTruthRadioButtonChange}
-                                               disabled={this.props.ground_truth_radio_button_disabled}
-                                               title="tooltip on radio!"/>
-                                        <label className="form-check-label" htmlFor="flexRadioDefault1">
-                                            Ground truth
-                                        </label>
-                                    </div>
-                                    <div className="form-check">
-                                        <input className="form-check-input" type="radio" name="flexRadio" id="flexRadioDefault2"
-                                               onChange={this.props.onPredictionRadioButtonChange}
-                                               disabled={this.props.prediction_radio_button_disabled} />
-                                        <label className="form-check-label" htmlFor="flexRadioDefault2">
-                                            Prediction
-                                        </label>
-                                    </div>
+                            <Row className="d-flex flex-row" style={{height:"100%"}}>
+                                <div className="form-check form-switch" style={{display: "flex", alignItems: "center"}}>
+                                    <input className="form-check-input"
+                                           type="checkbox"
+                                           key="switch_show_model_prediction"
+                                           id="switch_show_model_prediction"
+                                           onChange={() => this.props.onShowModelPredictionSwitchChange()}
+                                           checked={this.props.show_model_prediction}
+                                           style={{marginRight: "10px"}}
+                                    />
+                                    <label className="form-check-label" htmlFor="switch_show_model_prediction">
+                                        Show model prediction
+                                    </label>
                                 </div>
                             </Row>
                         </Col>

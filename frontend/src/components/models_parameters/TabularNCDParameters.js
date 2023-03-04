@@ -3,14 +3,20 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
+import {Tooltip} from "@mui/material";
+import {AiOutlineQuestionCircle} from "react-icons/ai";
 
 
 const TabularNCDParameters = (props) => {
     return (
         <Container>
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>Number of clusters</p>
+                    <Tooltip title="The number of unknown classes to predict">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Number of clusters <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -23,9 +29,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>Cosine Top <i>k</i> (in %)</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Cosine Top k (in %) <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -39,9 +49,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>w1</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            w1 <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -55,9 +69,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>w2</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            w2 <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -71,9 +89,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>Classif. lr</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Classif. lr <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -87,9 +109,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>Clust. lr</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Clust. lr <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -103,9 +129,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p><i>k</i> neighbors</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            k neighbors <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -118,9 +148,13 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <p>Dropout</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Dropout <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
@@ -136,7 +170,11 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row">
                 <Col className="col-7 d-flex flex-column">
-                    <p>Activation function</p>
+                    <Tooltip title="ToDo tooltip">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Activation function <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-5 d-flex flex-column">
                     <Form.Select

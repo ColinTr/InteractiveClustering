@@ -187,13 +187,13 @@ class ModelSelection extends React.Component {
 
                     <Row className="d-flex flex-row" style={{paddingTop: "10px"}}>
                         <Col className="col-6 d-flex flex-column">
-                            <Button variant="success" style={{paddingLeft:0, paddingRight:0, width:'120px'}} onClick={() => this.onAutoParamsButtonClick()}>
-                                Auto params
+                            <Button style={{width:'120px'}} onClick={() => this.onRunButtonClick()}>
+                                Run
                             </Button>
                         </Col>
                         <Col variant="primary" className="col-6 d-flex flex-column align-items-end">
-                            <Button style={{paddingLeft:0, paddingRight:0, width:'120px'}} onClick={() => this.onRunButtonClick()}>
-                                Run
+                            <Button variant="success" style={{width:'120px'}} onClick={() => this.onAutoParamsButtonClick()}>
+                                Auto params
                             </Button>
                         </Col>
                     </Row>

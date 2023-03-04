@@ -57,7 +57,7 @@ class DatasetSelector extends React.Component {
     render() {
         return (
             <Container>
-                <Col className="d-flex flex-column" style={{height: "100%"}}>
+                <Col className="d-flex flex-column" style={{height: "100%", paddingLeft: "6px", paddingRight: "6px"}}>
                     <Row className="d-flex flex-row">
                         <h5>Dataset selection</h5>
                     </Row>

@@ -2,6 +2,8 @@ import React from "react";
 import Container from "react-bootstrap/Container";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
+import {Tooltip} from "@mui/material";
+import {AiOutlineQuestionCircle} from "react-icons/ai";
 
 
 const KMeansParameters = (props) => {
@@ -9,7 +11,11 @@ const KMeansParameters = (props) => {
         <Container>
             <Row>
                 <Col className="col-8 d-flex flex-column">
-                    <p>Number of clusters</p>
+                    <Tooltip title="The number of unknown classes to predict">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Number of clusters <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"

@@ -1,7 +1,6 @@
 import React from 'react';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import {Form} from "react-bootstrap";
 import RangeSlider from 'react-bootstrap-range-slider';
 import Container from "react-bootstrap/Container";
 import Button from 'react-bootstrap/Button';
@@ -25,11 +24,12 @@ class AgglomerativeClustering extends React.Component {
     render() {
         return (
             <Container>
-                <h5>Agglomerative clust. granularity</h5>
+                <Col className="d-flex flex-column" style={{height: '100%', paddingLeft: "6px", paddingRight: "6px"}}>
+                    <Row className="d-flex flex-row pb-1">
+                        <h5>Agglomerative clust. granularity</h5>
+                    </Row>
 
-                <Form>
-                    <Form.Group as={Row} className="d-flex flex-row">
-
+                    <Row className="d-flex flex-row">
                         <Col className="col-7 d-flex flex-column"
                              style={{flexGrow:'1'}}>
                             <RangeSlider
@@ -50,9 +50,8 @@ class AgglomerativeClustering extends React.Component {
                                 Run
                             </Button>
                         </Col>
-
-                    </Form.Group>
-                </Form>
+                    </Row>
+                </Col>
             </Container>
         )
     }
