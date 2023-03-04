@@ -14,8 +14,8 @@ class FullPage extends React.Component {
     constructor(props) {
         super(props);
 
+        // The states of the children that need to be shared are "lifted" here
         this.initial_state = {
-            // The states of the children that need to be shared are "lifted" here
             dataset_name : null,
 
             formatted_features : null,
@@ -273,10 +273,12 @@ class FullPage extends React.Component {
 
     onRulesRunButtonClick = () => {
         fireSwalError("Not implemented yet!")
+        console.log("ToDo run the generation of the rules")
     }
 
-    onSeeRulesButtonClick = () => {
+    onShowRulesButtonClick = () => {
         fireSwalError("Not implemented yet!")
+        console.log("ToDo display the generated rules")
     }
 
     onDecisionTreeRadioButtonChange = (decision_tree_training_mode) => {
@@ -292,7 +294,24 @@ class FullPage extends React.Component {
     }
 
     onShowModelPredictionSwitchChange = () => {
-        this.setState({show_model_prediction: !this.state.show_model_prediction})
+        const new_show_model_prediction_value = !this.state.show_model_prediction
+        this.setState({show_model_prediction: new_show_model_prediction_value})
+
+        if(new_show_model_prediction_value === true){
+            console.log("ToDo update the current image to include the prediction of the model")
+        } else {
+            console.log("ToDo update the current image to display only the known classes, the rest has legend \"Unknown\"")
+        }
+    }
+
+    onAgglomerativeClusteringRunButtonClick = (agglomerative_clustering_value) => {
+        console.log("ToDo run agglomerative clustering with " + agglomerative_clustering_value + " clusters fusion")
+        fireSwalError("Not implemented yet!")
+    }
+
+    onAgglomerativeClusteringUpdateRulesButtonClick = () => {
+        fireSwalError("Not implemented yet!")
+        console.log("ToDo update the rules based on the result of the agglomerative clustering")
     }
 
     render() {
@@ -356,11 +375,12 @@ class FullPage extends React.Component {
                                         decision_tree_min_samples_split={this.state.decision_tree_min_samples_split}
 
                                         onRulesRunButtonClick={this.onRulesRunButtonClick}
-                                        onSeeRulesButtonClick={this.onSeeRulesButtonClick}
+                                        onShowRulesButtonClick={this.onShowRulesButtonClick}
                         />
                     </Row>
                     <Row className="my_row py-2 d-flex flex-row">
-                        <AgglomerativeClustering />
+                        <AgglomerativeClustering onAgglomerativeClusteringRunButtonClick={this.onAgglomerativeClusteringRunButtonClick}
+                                                 onAgglomerativeClusteringUpdateRulesButtonClick={this.onAgglomerativeClusteringUpdateRulesButtonClick}/>
                     </Row>
                 </Col>
 

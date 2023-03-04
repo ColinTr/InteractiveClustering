@@ -80,8 +80,8 @@ class RulesGenerator extends React.Component {
                             </Button>
                         </Col>
                         <Col className="col-6 d-flex flex-column flex-column align-items-end">
-                            <Button variant="success" style={{width:'120px'}} onClick={() => this.props.onSeeRulesButtonClick()} disabled>
-                                See rules
+                            <Button variant="success" style={{width:'120px'}} onClick={() => this.props.onShowRulesButtonClick()}>
+                                Show rules
                             </Button>
                         </Col>
                     </Row>
