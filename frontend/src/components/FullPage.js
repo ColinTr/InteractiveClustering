@@ -6,7 +6,6 @@ import AgglomerativeClustering from "./AgglomerativeClustering";
 import DataVisualization from "./DataVisualization";
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
-import Container from "react-bootstrap/Container";
 import fireSwalError from "./swal_functions";
 
 
@@ -279,63 +278,61 @@ class FullPage extends React.Component {
 
     render() {
         return (
-            <Container style={{height: '100vh'}}>
-                <Row style={{height: '100%'}} className="d-flex flex-row justify-content-center align-items-center">
+            <Row style={{height: '100vh', width:"90vw"}} className="d-flex flex-row justify-content-center align-items-center">
 
-                    <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "80vh"}}>
-                        <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
-                            <ModelSelection />
-                        </Row>
-                        <Row className="my_row py-1 d-flex flex-row">
-                            <AgglomerativeClustering />
-                        </Row>
-                    </Col>
+                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>
+                    <Row className="my_row py-2">
+                        <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
+                                         setDatasetNameHandler={this.setDatasetNameHandler}
+                                         unloadDatasetHandler={this.unloadDatasetHandler}
+                        />
+                    </Row>
+                    <Row className="my_row py-2" style={{flexGrow:'1'}}>
+                        <FeatureSelection feature_search_query={this.state.feature_search_query}
+                                          onChangeFeaturesSearch={this.onChangeFeaturesSearch}
+                                          search_filtered_features_list={this.state.search_filtered_features_list}
 
-                    <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "80vh"}}>
-                        <Row className="my_row mx-1 py-2 d-flex flex-row" style={{flexGrow:'1'}}>
-                            <DataVisualization image_to_display={this.state.image_to_display}
-                                               onRawDataButtonClick={this.onRawDataButtonClick}
-                                               onProjectionButtonClick={this.onProjectionButtonClick}
-                                               onGroundTruthRadioButtonChange={this.onGroundTruthRadioButtonChange}
-                                               onPredictionRadioButtonChange={this.onPredictionRadioButtonChange}
-                                               ground_truth_radio_button_disabled={this.state.ground_truth_radio_button_disabled}
-                                               prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}
-                            />
-                        </Row>
-                        <Row className="my_row mx-1 py-2">
-                            <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
-                                             setDatasetNameHandler={this.setDatasetNameHandler}
-                                             unloadDatasetHandler={this.unloadDatasetHandler}
-                            />
-                        </Row>
-                    </Col>
+                                          onClearFeaturesSearchButtonClick={this.onClearFeaturesSearchButtonClick}
+                                          onCheckAllButtonClick={this.onCheckAllButtonClick}
+                                          onUncheckAllButtonClick={this.onUncheckAllButtonClick}
+                                          onChangeCheckbox={this.onChangeCheckbox}
+                                          onFeatureRadioButtonChange={this.onFeatureRadioButtonChange}
 
-                    <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "80vh"}}>
-                        <Row className="my_row py-2" style={{flexGrow:'1'}}>
-                            <FeatureSelection feature_search_query={this.state.feature_search_query}
-                                              onChangeFeaturesSearch={this.onChangeFeaturesSearch}
-                                              search_filtered_features_list={this.state.search_filtered_features_list}
+                                          unique_values_search_query={this.state.unique_values_search_query}
+                                          onChangeUniqueValuesSearch={this.onChangeUniqueValuesSearch}
+                                          search_filtered_unique_values_list={this.state.search_filtered_unique_values_list}
 
-                                              onClearFeaturesSearchButtonClick={this.onClearFeaturesSearchButtonClick}
-                                              onCheckAllButtonClick={this.onCheckAllButtonClick}
-                                              onUncheckAllButtonClick={this.onUncheckAllButtonClick}
-                                              onChangeCheckbox={this.onChangeCheckbox}
-                                              onFeatureRadioButtonChange={this.onFeatureRadioButtonChange}
+                                          onClearUniqueValuesSearchButtonClick={this.onClearUniqueValuesSearchButtonClick}
+                                          onSwitchAllOnButtonClick={this.onSwitchAllOnButtonClick}
+                                          onSwitchAllOffButtonClick={this.onSwitchAllOffButtonClick}
+                                          onUniqueValueSwitchChange={this.onUniqueValueSwitchChange}
+                        />
+                    </Row>
+                </Col>
 
-                                              unique_values_search_query={this.state.unique_values_search_query}
-                                              onChangeUniqueValuesSearch={this.onChangeUniqueValuesSearch}
-                                              search_filtered_unique_values_list={this.state.search_filtered_unique_values_list}
+                <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "95vh"}}>
+                    <Row className="my_row mx-lg-1 py-2 d-flex flex-row" style={{flexGrow:'1'}}>
+                        <DataVisualization image_to_display={this.state.image_to_display}
+                                           onRawDataButtonClick={this.onRawDataButtonClick}
+                                           onProjectionButtonClick={this.onProjectionButtonClick}
+                                           onGroundTruthRadioButtonChange={this.onGroundTruthRadioButtonChange}
+                                           onPredictionRadioButtonChange={this.onPredictionRadioButtonChange}
+                                           ground_truth_radio_button_disabled={this.state.ground_truth_radio_button_disabled}
+                                           prediction_radio_button_disabled={this.state.prediction_radio_button_disabled}
+                        />
+                    </Row>
+                </Col>
 
-                                              onClearUniqueValuesSearchButtonClick={this.onClearUniqueValuesSearchButtonClick}
-                                              onSwitchAllOnButtonClick={this.onSwitchAllOnButtonClick}
-                                              onSwitchAllOffButtonClick={this.onSwitchAllOffButtonClick}
-                                              onUniqueValueSwitchChange={this.onUniqueValueSwitchChange}
-                            />
-                        </Row>
-                    </Col>
+                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>
+                    <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
+                        <ModelSelection />
+                    </Row>
+                    <Row className="my_row py-1 d-flex flex-row">
+                        <AgglomerativeClustering />
+                    </Row>
+                </Col>
 
-                </Row>
-            </Container>
+            </Row>
         )
     }
 

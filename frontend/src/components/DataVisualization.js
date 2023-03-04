@@ -15,7 +15,7 @@ class DataVisualization extends React.Component {
             return (
                 <img src={this.props.image_to_display}
                      alt="T-SNE of the data"
-                     style={{width: "100%", height: "100%", objectFit: "contain"}}
+                     style={{width: "95%", height: "100%", objectFit: "contain"}}
                 />
             )
         }
@@ -35,7 +35,7 @@ class DataVisualization extends React.Component {
                     </Row>
                     <Row className="d-flex flex-row" style={{paddingLeft: "6px", paddingRight: "6px"}}>
                         <Col className="d-flex flex-column">
-                            <Row className="d-flex flex-row "style={{paddingLeft: "12px"}}>
+                            <Row className="d-flex flex-row " style={{paddingLeft: "12px"}}>
                                 Get T-SNE of the...
                             </Row>
                             <Row className="d-flex flex-row">

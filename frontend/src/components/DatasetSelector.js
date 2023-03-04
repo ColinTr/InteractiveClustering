@@ -62,14 +62,16 @@ class DatasetSelector extends React.Component {
                         <h5>Dataset selection</h5>
                     </Row>
                     <Row className="d-flex flex-row">
-                        <Col className="col-8 d-flex flex-column justify-content-center">
+                        <Col className="col-12 d-flex flex-column justify-content-center">
                             <input type="file" onChange={this.onFileChange} style={{backgroundColor: "white", color: "black"}} id="my_input_file_form"/>
                         </Col>
-                        <Col className="col-2 d-flex flex-column" style={{textAlign: "right"}}>
-                            <button type="button" className="btn btn-primary" onClick={this.onFileUpload}>Load</button>
+                    </Row>
+                    <Row className="d-flex flex-row pt-2">
+                        <Col className="col-6 d-flex flex-column" style={{textAlign: "right"}}>
+                            <button type="button" className="btn btn-primary" onClick={this.onFileUpload} style={{width:'100px'}}>Load</button>
                         </Col>
-                        <Col className="col-2 d-flex flex-column" style={{textAlign: "right"}}>
-                            <button type="button" className="btn btn-danger" onClick={this.onDatasetUnload}>Unload</button>
+                        <Col className="col-6 d-flex flex-column align-items-end" style={{textAlign: "right"}}>
+                            <button type="button" className="btn btn-danger" onClick={this.onDatasetUnload} style={{width:'100px'}}>Unload</button>
                         </Col>
                     </Row>
                 </Col>
