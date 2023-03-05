@@ -4,6 +4,7 @@ Simple web interface to interact with various clustering algorithms and display 
 
 **Note:** The backend uses the port 5000 and the frontend uses the port 3000.
 
+**/!\ Datasets must be placed in ./datasets/... and cannot be loaded from other folders.**
 
 ## The interface
 
