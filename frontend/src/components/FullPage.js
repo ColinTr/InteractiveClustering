@@ -8,6 +8,8 @@ import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import fireSwalError from "./swal_functions";
 import RulesGenerator from "./RulesGenerator";
+import RulesDisplayModal from "./RulesDisplayModal";
+import Swal from "sweetalert2";
 
 
 class FullPage extends React.Component {
@@ -47,15 +49,18 @@ class FullPage extends React.Component {
             image_to_display: null,
             show_unknown_only: false,
 
+            // Rules generation parameters
             decision_tree_training_mode: "multi_class",
+            decision_tree_unknown_classes_only: false,
             decision_tree_max_depth: null,
             decision_tree_min_samples_split: 2,
+            rules_modal_is_open: false,
+            text_rules: "",
 
             model_params_selected_model : "tabularncd",
 
             // k means parameters :
             model_params_k_means_n_clusters: this.default_model_params.default_kmeans_n_clusters,
-            model_params_kmeans_train_on_unknown_classes_only: false,
 
             // TabularNCD parameters :
             model_params_tabncd_n_clusters : this.default_model_params.default_tabncd_n_clusters,
@@ -328,13 +333,59 @@ class FullPage extends React.Component {
     }
 
     onRulesRunButtonClick = () => {
-        fireSwalError("Not implemented yet!")
-        console.log("ToDo run the generation of the rules")
+        // ToDo sanity checks
+
+        // Build the request
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+
+            body: JSON.stringify({
+                'dataset_name': this.state.dataset_name,
+                'decision_tree_configuration': {
+                    'decision_tree_training_mode': this.state.decision_tree_training_mode,
+                    'decision_tree_unknown_classes_only': this.state.decision_tree_unknown_classes_only,
+                    'decision_tree_max_depth': this.state.decision_tree_max_depth,
+                    'decision_tree_min_samples_split': this.state.decision_tree_min_samples_split,
+                    'random_state': 0,
+                }
+            })
+        }
+        fetch('/runRulesGeneration', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
+                    })
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.json().then(response_json => {
+                        this.setState({text_rules: response_json["text_rules"]})
+
+                        Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.addEventListener('mouseenter', Swal.stopTimer)
+                                toast.addEventListener('mouseleave', Swal.resumeTimer)
+                            }
+                        }).fire({
+                            icon: 'success',
+                            title: 'Rules generated'
+                        })
+                    })
+                }
+            })
     }
 
     onShowRulesButtonClick = () => {
-        fireSwalError("Not implemented yet!")
-        console.log("ToDo display the generated rules")
+        this.openRulesModal()
     }
 
     onDecisionTreeRadioButtonChange = (decision_tree_training_mode) => {
@@ -384,8 +435,13 @@ class FullPage extends React.Component {
             fireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
             return
         }
-        if(this.state.model_params_kmeans_train_on_unknown_classes_only === true && this.getUnknownClassesFormattedList().length === 0){
-            fireSwalError("Cannot train k-means on unknown classes", "There are no unknown classes selected")
+        if(this.state.model_params_selected_model === "k_means" && this.getUnknownClassesFormattedList().length === 0){
+            fireSwalError("Cannot train k-means", "There are no unknown classes selected")
+            return
+        }
+
+        if(this.state.model_params_selected_model === "tabularncd"){
+            fireSwalError("Not implemented yet!")
             return
         }
 
@@ -396,7 +452,6 @@ class FullPage extends React.Component {
                 'model_name': this.state.model_params_selected_model,
 
                 'k_means_n_clusters': parseInt(this.state.model_params_k_means_n_clusters),
-                'kmeans_train_on_unknown_classes_only': this.state.model_params_kmeans_train_on_unknown_classes_only,
             }
         }
 
@@ -507,13 +562,31 @@ class FullPage extends React.Component {
         this.setState({model_params_tabncd_activation_fct: event.target.value})
     }
 
-    onKMeansTrainOnUknownClassesOnlySwitchChange = () => {
-        this.setState({model_params_kmeans_train_on_unknown_classes_only: !this.state.model_params_kmeans_train_on_unknown_classes_only})
+    onRulesUnknownClassesOnlySwitchChange = () => {
+        this.setState({decision_tree_unknown_classes_only: !this.state.decision_tree_unknown_classes_only})
+    }
+
+    openRulesModal = () => {
+        if(this.state.text_rules === ""){
+            fireSwalError("No rules to display", "Please run a clustering before")
+        } else {
+            this.setState({rules_modal_is_open: true})
+        }
+    }
+
+    closeRulesModal = () => {
+        this.setState({rules_modal_is_open: false})
     }
 
     render() {
         return (
             <Row style={{height: '100vh', width:"90vw"}} className="d-flex flex-row justify-content-center align-items-center">
+
+                <RulesDisplayModal rules_modal_is_open={this.state.rules_modal_is_open}
+                                   openRulesModal={this.openRulesModal}
+                                   closeRulesModal={this.closeRulesModal}
+                                   text_rules={this.state.text_rules}
+                />
 
                 <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>
                     <Row className="my_row py-2">
@@ -586,12 +659,13 @@ class FullPage extends React.Component {
                                         on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
                                         k_means_n_clusters={this.state.model_params_k_means_n_clusters}
                                         onKMeansTrainOnUknownClassesOnlySwitchChange={this.onKMeansTrainOnUknownClassesOnlySwitchChange}
-                                        model_params_kmeans_train_on_unknown_classes_only={this.state.model_params_kmeans_train_on_unknown_classes_only}
                         />
                     </Row>
                     <Row className="my_row py-2 d-flex flex-row">
                         <RulesGenerator onDecisionTreeRadioButtonChange={this.onDecisionTreeRadioButtonChange}
                                         decision_tree_training_mode={this.state.decision_tree_training_mode}
+
+                                        onRulesUnknownClassesOnlySwitchChange={this.onRulesUnknownClassesOnlySwitchChange}
 
                                         on_decision_tree_max_depth_change={this.on_decision_tree_max_depth_change}
                                         decision_tree_max_depth={this.state.decision_tree_max_depth}
@@ -612,7 +686,6 @@ class FullPage extends React.Component {
             </Row>
         )
     }
-
 }
 
 export default FullPage;

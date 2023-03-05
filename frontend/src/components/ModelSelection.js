@@ -32,8 +32,6 @@ class ModelSelection extends React.Component {
             <KMeansParameters
                 on_kmeans_n_clusters_change={this.props.on_kmeans_n_clusters_change}
                 n_clusters_value={this.props.k_means_n_clusters}
-                onKMeansTrainOnUknownClassesOnlySwitchChange={this.props.onKMeansTrainOnUknownClassesOnlySwitchChange}
-                model_params_kmeans_train_on_unknown_classes_only={this.props.model_params_kmeans_train_on_unknown_classes_only}
             />
         )
     }

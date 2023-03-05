@@ -27,27 +27,6 @@ const KMeansParameters = (props) => {
                     />
                 </Col>
             </Row>
-
-            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <Col className="col-10 d-flex flex-column">
-                    <Tooltip title="Fit the k-means model only on the unknown classes, or on all the data (known + unknown)">
-                        <label className="form-check-label" htmlFor="switch_train_unknown_ony">
-                            Train on unknown classes only <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
-                        </label>
-                    </Tooltip>
-                </Col>
-                <Col className="col-2 d-flex flex-column">
-                    <div className="form-check form-switch justify-content-center" style={{display: "flex", alignItems: "center"}}>
-                        <input className="form-check-input"
-                               type="checkbox"
-                               key="switch_train_unknown_ony"
-                               id="switch_train_unknown_ony"
-                               onChange={props.onKMeansTrainOnUknownClassesOnlySwitchChange}
-                               style={{marginRight: "10px"}}
-                        />
-                    </div>
-                </Col>
-            </Row>
         </Container>
     )
 

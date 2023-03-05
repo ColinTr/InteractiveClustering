@@ -9,7 +9,9 @@ class DataVisualization extends React.Component {
     img_display = () => {
         if(this.props.image_to_display == null){
             return (
-                <i>Load a dataset to visualize</i>
+                <div style={{display: "flex", alignItems: "center", height:"100%", justifyContent: "center"}}>
+                    <i>Load a dataset to visualize</i>
+                </div>
             )
         } else {
             return (

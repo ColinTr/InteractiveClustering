@@ -37,6 +37,28 @@ class RulesGenerator extends React.Component {
                             </Form.Label>
                         </div>
                     </Row>
+
+                    <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                        <Col className="col-10 d-flex flex-column">
+                            <Tooltip title="Generate rules for all the classes (known + unknown), or only for the unknown classes">
+                                <label className="form-check-label" htmlFor="switch_train_unknown_ony">
+                                    Unknown classes only <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                                </label>
+                            </Tooltip>
+                        </Col>
+                        <Col className="col-2 d-flex flex-column">
+                            <div className="form-check form-switch justify-content-center" style={{display: "flex", alignItems: "center"}}>
+                                <input className="form-check-input"
+                                       type="checkbox"
+                                       key="switch_train_unknown_ony"
+                                       id="switch_train_unknown_ony"
+                                       onChange={this.props.onRulesUnknownClassesOnlySwitchChange}
+                                       style={{marginRight: "10px"}}
+                                />
+                            </div>
+                        </Col>
+                    </Row>
+
                     <Row className="d-flex flex-row">
                         <Col className="col-8 d-flex flex-column">
                             <Tooltip title="The maximum depth of the tree. If empty, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.">
@@ -55,6 +77,7 @@ class RulesGenerator extends React.Component {
                             />
                         </Col>
                     </Row>
+
                     <Row className="d-flex flex-row">
                         <Col className="col-8 d-flex flex-column">
                             <Tooltip title="The minimum number of samples required to split an internal node:">

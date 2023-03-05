@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, request, session, send_file
+from sklearn.tree import DecisionTreeClassifier
 from matplotlib.figure import Figure
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from flask_cors import CORS
+from sklearn import tree
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -111,12 +113,12 @@ def findTSNEConfig(results_dict, dataset_name, tsne_config_to_find):
     if dataset_name in results_dict.keys():
         for tsne_run_name in results_dict[dataset_name].keys():
             tsne_run = results_dict[dataset_name][tsne_run_name]
+
             if tsne_run["tsne_config"] == tsne_config_to_find:
                 if os.path.isfile(tsne_run['tsne_filepath']):
                     tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
                     return tsne_array, tsne_run_name
 
-    # If we didn't find a tsne that corresponds to the config, return None
     return None, None
 
 
@@ -128,15 +130,6 @@ def findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_
         if image_config['image_configuration'] == image_configuration:
             if os.path.isfile(image_config['image_filepath']):
                 return image_config['image_filepath']
-
-        # if set(image_config['known_classes']) == set(known_classes) and set(image_config['unknown_classes']) == set(unknown_classes):
-        #     if color_by == 'known_only' and image_config['color_by'] == 'known_only':
-        #         # This is the same image configuration.
-        #         # Check if the image still exists:
-        #     elif color_by == 'model_prediction' and image_config['color_by'] == 'model_prediction':
-        #         if model_config_to_find == image_config['model_config']:
-        #             if os.path.isfile(image_config['image_filepath']):
-        #                 return image_config['image_filepath']
 
     return None
 
@@ -266,21 +259,15 @@ def runClustering():
         # Generate the image based on the prediction
         if model_name == "k_means":
             k_means_n_clusters = model_config['k_means_n_clusters']
-            kmeans_train_on_unknown_classes_only = model_config['kmeans_train_on_unknown_classes_only']
 
-            if kmeans_train_on_unknown_classes_only is True:
-                kmeans_train_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
-            else:
-                kmeans_train_mask = np.repeat(True, len(dataset))
+            # We train only on the unknown data
+            kmeans_unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
 
             kmeans_model = KMeans(n_clusters=k_means_n_clusters, random_state=random_state, n_init="auto")
-            clustering_prediction = kmeans_model.fit_predict(filtered_dataset[kmeans_train_mask])
+            clustering_prediction = kmeans_model.fit_predict(filtered_dataset[kmeans_unknown_mask])
 
-            if kmeans_train_on_unknown_classes_only is True:
-                full_target_to_plot = np.array(dataset[target_name])
-                full_target_to_plot[kmeans_train_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
-            else:
-                full_target_to_plot = np.array(["Cluster " + str(pred) for pred in clustering_prediction])
+            full_target_to_plot = np.array(dataset[target_name])
+            full_target_to_plot[kmeans_unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
 
         elif model_name == "tabularncd":
             print("ToDo tabularncd")
@@ -294,11 +281,19 @@ def runClustering():
             tabncd_dropout = model_config["tabncd_dropout"]
             tabncd_activation_fct = model_config["tabncd_activation_fct"]
 
+            clustering_prediction = None
             full_target_to_plot = None
 
             # ToDo implement the TabularNCD clustering model
         else:
             return "Clustering method " + model_name + " not implemented yet", 422
+
+        # Save the prediction of the clustering for future rules generation
+        session['last_clustering_prediction'] = clustering_prediction.tolist()
+        session['last_clustering_target_name'] = target_name
+        session['last_clustering_original_target'] = np.array(dataset[target_name]).tolist()
+        session['last_clustering_unknown_classes'] = unknown_classes
+        session['last_clustering_selected_features'] = selected_features
 
         image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
 
@@ -327,6 +322,50 @@ def runClustering():
         saveResultsDict(results_dict)
 
         return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
+    else:
+        return "Dataset not loaded", 400
+
+
+@app.route('/runRulesGeneration', methods=['POST'])
+def runRulesGeneration():
+    dataset = session.get('loaded_dataset')
+
+    if dataset:
+        dataset = pd.DataFrame(eval(dataset))
+        last_clustering_prediction = session.get('last_clustering_prediction')
+        last_clustering_target_name = session.get('last_clustering_target_name')
+        last_clustering_original_target = session.get('last_clustering_original_target')
+        last_clustering_unknown_classes = session.get('last_clustering_unknown_classes')
+        last_clustering_selected_features = session.get('last_clustering_selected_features')
+
+        data = request.get_json()
+        decision_tree_config = data['decision_tree_configuration']
+        decision_tree_training_mode = decision_tree_config['decision_tree_training_mode']
+        decision_tree_unknown_classes_only = decision_tree_config['decision_tree_unknown_classes_only']
+        decision_tree_max_depth = decision_tree_config['decision_tree_max_depth']
+        decision_tree_max_depth = None if decision_tree_max_depth == '' else eval(decision_tree_max_depth)
+        decision_tree_min_samples_split = eval(decision_tree_config['decision_tree_min_samples_split'])
+        random_state = decision_tree_config['random_state']
+
+        clf = DecisionTreeClassifier(max_depth=decision_tree_max_depth,
+                                     min_samples_split=decision_tree_min_samples_split,
+                                     random_state=random_state)
+
+        if decision_tree_unknown_classes_only is True:
+            mask = np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)
+
+            clf.fit(dataset[last_clustering_selected_features][mask], last_clustering_prediction)
+        else:
+            full_target = np.array(last_clustering_original_target)
+            full_target[np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)] = last_clustering_prediction
+
+            clf.fit(dataset[last_clustering_selected_features], full_target)
+
+        text_representation = tree.export_text(clf, feature_names=last_clustering_selected_features)
+
+        print(text_representation)
+
+        return jsonify({"text_rules": text_representation})
     else:
         return "Dataset not loaded", 400
 
