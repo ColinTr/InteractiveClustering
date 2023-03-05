@@ -61,23 +61,15 @@ def loadResultsDict():
     return results_dict
 
 
-def findTSNEConfig(results_dict, dataset_name, target_name, selected_features, tsne_seed, tsne_perplexity):
-    if dataset_name in results_dict.keys():
-        for tsne_config_name in results_dict[dataset_name].keys():
-            tsne_config = results_dict[dataset_name][tsne_config_name]
-            if tsne_config['target_name'] == target_name and \
-                    set(tsne_config["used_features"]) == set(selected_features) and \
-                    tsne_config["tsne_seed"] == tsne_seed and \
-                    tsne_config["tsne_perplexity"] == tsne_perplexity:
-                if os.path.isfile(tsne_config['tsne_array_filepath']):
-                    tsne_array = pd.read_csv(tsne_config['tsne_array_filepath'], header=None)
-                    corresponding_tsne_config_name = tsne_config_name
-                    return tsne_array, corresponding_tsne_config_name
-    return None, None
+def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only):
+    if show_unknown_only is True:
+        mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+    else:
+        mask = np.repeat(True, len(dataset))
 
+    tsne_data = np.array(dataset[selected_features])[mask]
 
-def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity):
-    tsne_array = TSNE(n_components=2, perplexity=tsne_perplexity, random_state=tsne_seed).fit_transform(dataset[selected_features])
+    tsne_array = TSNE(n_components=2, perplexity=tsne_perplexity, random_state=tsne_seed).fit_transform(tsne_data)
     tsne_array = pd.DataFrame(tsne_array)
 
     # And it is then saved
@@ -96,12 +88,17 @@ def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features,
         results_dict[dataset_name] = {}
 
     results_dict[dataset_name]["tsne_config_" + tsne_datetime_string] = {
-        "used_features": selected_features,
-        "tsne_seed": tsne_seed,
-        "tsne_perplexity": tsne_perplexity,
-        "target_name": target_name,
-        "tsne_array_filepath": os.path.join(tsne_array_folder_path, tsne_array_filename),
-        "images_config": {}
+        "tsne_config": {
+            "selected_features": selected_features,
+            "known_classes": known_classes,
+            "unknown_classes": unknown_classes,
+            "target_name": target_name,
+            "show_unknown_only": show_unknown_only,
+            "tsne_seed": tsne_seed,
+            "tsne_perplexity": tsne_perplexity
+        },
+        "tsne_filepath": os.path.join(tsne_array_folder_path, tsne_array_filename),
+        "images_configurations": {}
     }
 
     saveResultsDict(results_dict)
@@ -110,24 +107,37 @@ def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features,
     return tsne_array, corresponding_tsne_config_name
 
 
-def findImage(results_dict, dataset_name, corresponding_tsne_config_name, known_classes, unknown_classes, color_by, model_name, model_config_to_find):
+def findTSNEConfig(results_dict, dataset_name, tsne_config_to_find):
+    if dataset_name in results_dict.keys():
+        for tsne_run_name in results_dict[dataset_name].keys():
+            tsne_run = results_dict[dataset_name][tsne_run_name]
+            if tsne_run["tsne_config"] == tsne_config_to_find:
+                if os.path.isfile(tsne_run['tsne_filepath']):
+                    tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
+                    return tsne_array, tsne_run_name
+
+    # If we didn't find a tsne that corresponds to the config, return None
+    return None, None
+
+
+def findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_configuration):
     tsne_config = results_dict[dataset_name][corresponding_tsne_config_name]
-    for image_config_name in tsne_config['images_config'].keys():
-        image_config = tsne_config['images_config'][image_config_name]
-        if set(image_config['known_classes']) == set(known_classes) and set(image_config['unknown_classes']) == set(unknown_classes):
-            if color_by == 'known_only' and image_config['color_by'] == 'known_only':
-                # This is the same image configuration.
-                # Check if the image still exists:
-                if os.path.isfile(image_config['image_filepath']):
-                    return image_config['image_filepath']
-            elif color_by == 'model_prediction' and image_config['color_by'] == 'model_prediction':
-                if model_name == 'k_means' and image_config['model_config']['model_name'] == 'k_means':
-                    if model_config_to_find['k_means_n_clusters'] == image_config['model_config']['k_means_n_clusters']:
-                        if os.path.isfile(image_config['image_filepath']):
-                            return image_config['image_filepath']
-                elif model_name == 'tabularncd' and image_config['model_config']['model_name'] == 'tabularncd':
-                    return None
-                # ToDo : add support for other models here...
+    for image_config_name in tsne_config['images_configurations'].keys():
+        image_config = tsne_config['images_configurations'][image_config_name]
+
+        if image_config['image_configuration'] == image_configuration:
+            if os.path.isfile(image_config['image_filepath']):
+                return image_config['image_filepath']
+
+        # if set(image_config['known_classes']) == set(known_classes) and set(image_config['unknown_classes']) == set(unknown_classes):
+        #     if color_by == 'known_only' and image_config['color_by'] == 'known_only':
+        #         # This is the same image configuration.
+        #         # Check if the image still exists:
+        #     elif color_by == 'model_prediction' and image_config['color_by'] == 'model_prediction':
+        #         if model_config_to_find == image_config['model_config']:
+        #             if os.path.isfile(image_config['image_filepath']):
+        #                 return image_config['image_filepath']
+
     return None
 
 
@@ -139,59 +149,70 @@ def getDatasetTSNE():
         data = request.get_json()
 
         dataset_name = data['dataset_name']
-        selected_features = data['selected_features']
-        known_classes = data['known_classes']
-        unknown_classes = data['unknown_classes']
-        target_name = data['target_name']
-        tsne_seed = data['tsne_seed']
-        tsne_perplexity = data['tsne_perplexity']
-        color_by = data['color_by']
+
+        tsne_config = data['tsne_config']
+        selected_features = tsne_config['selected_features']
+        known_classes = tsne_config['known_classes']
+        unknown_classes = tsne_config['unknown_classes']
+        target_name = tsne_config['target_name']
+        show_unknown_only = tsne_config['show_unknown_only']
+        tsne_seed = tsne_config['tsne_seed']
+        tsne_perplexity = tsne_config['tsne_perplexity']
+
+        image_config = data['image_config']
+        color_by = image_config['color_by']
+        random_state = image_config['random_state']
+
+        if show_unknown_only is True:
+            unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+        else:
+            unknown_mask = np.repeat(True, len(dataset))
+        tsne_target = np.array(dataset[target_name])[unknown_mask]
+        tsne_target = [target if target in known_classes else "Unknown" for target in tsne_target]
 
         results_dict = loadResultsDict()
 
-        # 1.1) Try to find the configuration in the results_dict
-        tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, target_name, selected_features, tsne_seed, tsne_perplexity)
+        # Try to find the configuration in the results_dict
+        tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
 
-        # 1.2) If this configuration wasn't found in the configuration, it needs to be run
-        if tsne_array is None:
-            tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity)
+        # Try to find if the image was already generated beforehand
+        if tsne_array is not None:
+            image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
+            if image_filepath is not None:
+                return send_file(image_filepath, mimetype='image/png')
 
-        # 2.1) Try to find if the image was already generated beforehand
-        image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, known_classes, unknown_classes, color_by, None, None)
-        if image_filepath is not None:
-            return send_file(image_filepath, mimetype='image/png')
+        # If this configuration wasn't found in the configuration, it needs to be run
+        tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
 
-        # 2.2) If the image wasn't generated before, do it
-        else:
-            # If the image doesn't exist, we need to create it
-            image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
+        # If the image doesn't exist, we need to create it
+        image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
 
-            if not os.path.isdir(image_folder_path):
-                os.makedirs(image_folder_path)
+        if not os.path.isdir(image_folder_path):
+            os.makedirs(image_folder_path)
 
-            image_datetime_string = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+        image_datetime_string = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
 
-            image_filename = image_datetime_string + '.png'
+        image_filename = image_datetime_string + '.png'
 
-            fig = Figure(figsize=(8, 8))
-            axis = fig.add_subplot(1, 1, 1)
-            target_array = np.array(dataset[target_name])
-            target_array = [target if target in known_classes else "Unknown" for target in target_array]
-            sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_array)
+        fig = Figure(figsize=(8, 8))
+        axis = fig.add_subplot(1, 1, 1)
+        axis.set_title("T-SNE of the original " + dataset_name + " dataset")
+        sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=tsne_target)
 
-            fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
+        fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
-            results_dict[dataset_name][corresponding_tsne_config_name]['images_config']['image_' + image_datetime_string] = {
-                "image_filepath": os.path.join(image_folder_path, image_filename),
-                "known_classes": known_classes,
-                "unknown_classes": unknown_classes,
+        results_dict[dataset_name][corresponding_tsne_config_name]['images_configurations']['image_' + image_datetime_string] = {
+            "image_configuration": {
+                "random_state": random_state,
                 "color_by": color_by,
                 "model_config": ""
-            }
+            },
+            "image_filepath": os.path.join(image_folder_path, image_filename)
+        }
 
-            saveResultsDict(results_dict)
+        saveResultsDict(results_dict)
 
-            return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
+        return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
     else:
         return "Dataset not loaded", 400
 
@@ -205,27 +226,62 @@ def runClustering():
         data = request.get_json()
 
         dataset_name = data['dataset_name']
-        selected_features = data['selected_features']
-        known_classes = data['known_classes']
-        unknown_classes = data['unknown_classes']
-        target_name = data['target_name']
 
-        random_state = data['random_state']
-        tsne_seed = data['tsne_seed']
-        tsne_perplexity = data['tsne_perplexity']
-        color_by = data['color_by']
+        tsne_config = data['tsne_config']
+        selected_features = tsne_config['selected_features']
+        known_classes = tsne_config['known_classes']
+        unknown_classes = tsne_config['unknown_classes']
+        target_name = tsne_config['target_name']
+        show_unknown_only = tsne_config['show_unknown_only']
+        tsne_seed = tsne_config['tsne_seed']
+        tsne_perplexity = tsne_config['tsne_perplexity']
 
-        model_config = data['model_config']
+        image_config = data['image_config']
+        color_by = image_config['color_by']
+        random_state = image_config['random_state']
+        model_config = image_config['model_config']
         model_name = model_config['model_name']
 
         filtered_dataset = np.array(dataset[selected_features])
 
-        # ToDo: Give the option to train on either all the classes, or the unknown only
+        if show_unknown_only is True:
+            unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+        else:
+            unknown_mask = np.repeat(True, len(dataset))
 
+        results_dict = loadResultsDict()
+
+        # Try to find the configuration in the results_dict
+        tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
+
+        # Try to find if the image was already generated beforehand
+        if tsne_array is not None:
+            image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
+            if image_filepath is not None:
+                return send_file(image_filepath, mimetype='image/png')
+
+        # If this configuration wasn't found in the configuration, it needs to be run
+        tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
+
+        # Generate the image based on the prediction
         if model_name == "k_means":
             k_means_n_clusters = model_config['k_means_n_clusters']
+            kmeans_train_on_unknown_classes_only = model_config['kmeans_train_on_unknown_classes_only']
+
+            if kmeans_train_on_unknown_classes_only is True:
+                kmeans_train_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+            else:
+                kmeans_train_mask = np.repeat(True, len(dataset))
+
             kmeans_model = KMeans(n_clusters=k_means_n_clusters, random_state=random_state, n_init="auto")
-            clustering_prediction = kmeans_model.fit_predict(filtered_dataset)
+            clustering_prediction = kmeans_model.fit_predict(filtered_dataset[kmeans_train_mask])
+
+            if kmeans_train_on_unknown_classes_only is True:
+                full_target_to_plot = np.array(dataset[target_name])
+                full_target_to_plot[kmeans_train_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+            else:
+                full_target_to_plot = np.array(["Cluster " + str(pred) for pred in clustering_prediction])
+
         elif model_name == "tabularncd":
             print("ToDo tabularncd")
             tabncd_n_clusters = model_config["tabncd_n_clusters"]
@@ -238,59 +294,39 @@ def runClustering():
             tabncd_dropout = model_config["tabncd_dropout"]
             tabncd_activation_fct = model_config["tabncd_activation_fct"]
 
-            clustering_prediction = None
+            full_target_to_plot = None
 
             # ToDo implement the TabularNCD clustering model
         else:
             return "Clustering method " + model_name + " not implemented yet", 422
 
-        # Generate the image based on the prediction
+        image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
 
-        results_dict = loadResultsDict()
+        if not os.path.isdir(image_folder_path):
+            os.makedirs(image_folder_path)
 
-        # 1.1) Try to find the configuration in the results_dict
-        tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, target_name, selected_features, tsne_seed, tsne_perplexity)
+        image_datetime_string = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
 
-        # 1.2) If this configuration wasn't found in the configuration, it needs to be run
-        if tsne_array is None:
-            tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity)
+        image_filename = image_datetime_string + '.png'
 
-        # 2.1) Try to find if the image was already generated beforehand
-        image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, known_classes, unknown_classes, color_by, model_name, model_config)
-        if image_filepath is not None:
-            return send_file(image_filepath, mimetype='image/png')
+        fig = Figure(figsize=(8, 8))
+        axis = fig.add_subplot(1, 1, 1)
+        axis.set_title("T-SNE of the original " + dataset_name + " dataset colored by " + model_name)
+        sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=full_target_to_plot[unknown_mask])
+        fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
-        # 2.2) If the image wasn't generated before, do it
-        else:
-            # If the image doesn't exist, we need to create it
-            image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
-
-            if not os.path.isdir(image_folder_path):
-                os.makedirs(image_folder_path)
-
-            image_datetime_string = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
-
-            image_filename = image_datetime_string + '.png'
-
-            fig = Figure(figsize=(8, 8))
-            axis = fig.add_subplot(1, 1, 1)
-            axis.set_title(model_name + " prediction")
-            target_array = ["Cluster " + str(pred) for pred in clustering_prediction]
-            sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]),
-                            y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_array)
-            fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
-
-            results_dict[dataset_name][corresponding_tsne_config_name]['images_config']['image_' + image_datetime_string] = {
-                "image_filepath": os.path.join(image_folder_path, image_filename),
-                "known_classes": known_classes,
-                "unknown_classes": unknown_classes,
+        results_dict[dataset_name][corresponding_tsne_config_name]['images_configurations']['image_' + image_datetime_string] = {
+            "image_configuration": {
+                "random_state": random_state,
                 "color_by": color_by,
                 "model_config": model_config
-            }
+            },
+            "image_filepath": os.path.join(image_folder_path, image_filename),
+        }
 
-            saveResultsDict(results_dict)
+        saveResultsDict(results_dict)
 
-            return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
+        return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
     else:
         return "Dataset not loaded", 400
 

@@ -45,7 +45,7 @@ class FullPage extends React.Component {
             search_filtered_unique_values_list : null,
 
             image_to_display: null,
-            show_model_prediction: false,
+            show_unknown_only: false,
 
             decision_tree_training_mode: "multi_class",
             decision_tree_max_depth: null,
@@ -225,19 +225,30 @@ class FullPage extends React.Component {
             fireSwalError("Please select a target feature")
             return
         }
+        if(this.state.show_unknown_only === true && this.getUnknownClassesFormattedList().length === 0){
+            fireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
+            return
+        }
 
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 'dataset_name': this.state.dataset_name,
-                'selected_features': this.getSelectedFeaturesFormattedList(),
-                'known_classes': this.getKnownClassesFormattedList(),
-                'unknown_classes': this.getUnknownClassesFormattedList(),
-                'target_name': this.state.selected_class_feature,
-                'tsne_seed' : 0,
-                'tsne_perplexity': 30.0,
-                'color_by': 'known_only'
+                'tsne_config': {
+                    'selected_features': this.getSelectedFeaturesFormattedList(),
+                    'known_classes': this.getKnownClassesFormattedList(),
+                    'unknown_classes': this.getUnknownClassesFormattedList(),
+                    'target_name': this.state.selected_class_feature,
+                    'show_unknown_only': this.state.show_unknown_only,
+                    'tsne_seed' : 0,
+                    'tsne_perplexity': 30.0
+                },
+                'image_config': {
+                    'random_state': 0,
+                    'color_by': 'known_only',
+                    "model_config": ""
+                }
             })
         }
         fetch('/getDatasetTSNE', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
@@ -338,14 +349,14 @@ class FullPage extends React.Component {
         this.setState({decision_tree_min_samples_split: event.target.value})
     }
 
-    onShowModelPredictionSwitchChange = () => {
-        const new_show_model_prediction_value = !this.state.show_model_prediction
-        this.setState({show_model_prediction: new_show_model_prediction_value})
+    onShowUnknownOnlySwitchChange = () => {
+        const new_show_unknown_only_value = !this.state.show_unknown_only
+        this.setState({show_unknown_only: new_show_unknown_only_value})
 
-        if(new_show_model_prediction_value === true){
-            console.log("ToDo update the current image to include the prediction of the model")
+        if(new_show_unknown_only_value === true){
+            console.log("ToDo update the current image to show only the unknown classes")
         } else {
-            console.log("ToDo update the current image to display only the known classes, the rest has legend \"Unknown\"")
+            console.log("ToDo update the current image to display all the classes")
         }
     }
 
@@ -369,41 +380,64 @@ class FullPage extends React.Component {
             fireSwalError("Please select a target feature")
             return
         }
-        if(this.state.model_params_selected_model === "tabularncd"){
-            fireSwalError("Not implemented yet!", "Please use k-means instead.")
+        if(this.state.show_unknown_only === true && this.getUnknownClassesFormattedList().length === 0){
+            fireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
             return
+        }
+        if(this.state.model_params_kmeans_train_on_unknown_classes_only === true && this.getUnknownClassesFormattedList().length === 0){
+            fireSwalError("Cannot train k-means on unknown classes", "There are no unknown classes selected")
+            return
+        }
+
+        let model_config = null
+
+        if(this.state.model_params_selected_model === "k_means"){
+            model_config = {
+                'model_name': this.state.model_params_selected_model,
+
+                'k_means_n_clusters': parseInt(this.state.model_params_k_means_n_clusters),
+                'kmeans_train_on_unknown_classes_only': this.state.model_params_kmeans_train_on_unknown_classes_only,
+            }
+        }
+
+        if(this.state.model_params_selected_model === "tabularncd"){
+            model_config = {
+                'model_name': this.state.model_params_selected_model,
+
+                'tabncd_n_clusters': parseInt(this.state.model_params_tabncd_n_clusters),
+                'tabncd_cosine_topk': parseFloat(this.state.model_params_tabncd_cosine_topk),
+                'tabncd_w1': parseFloat(this.state.model_params_tabncd_w1),
+                'tabncd_w2': parseFloat(this.state.model_params_tabncd_w2),
+                'tabncd_classifier_lr': parseFloat(this.state.model_params_tabncd_classifier_lr),
+                'tabncd_cluster_lr': parseFloat(this.state.model_params_tabncd_cluster_lr),
+                'tabncd_k_neighbors': parseInt(this.state.model_params_tabncd_k_neighbors),
+                'tabncd_dropout': parseFloat(this.state.model_params_tabncd_dropout),
+                'tabncd_activation_fct': this.state.model_params_tabncd_activation_fct
+            }
         }
 
         // Build the request
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(
-                { 'dataset_name': this.state.dataset_name,
+
+            body: JSON.stringify({
+                'dataset_name': this.state.dataset_name,
+                'tsne_config': {
                     'selected_features': this.getSelectedFeaturesFormattedList(),
                     'known_classes': this.getKnownClassesFormattedList(),
                     'unknown_classes': this.getUnknownClassesFormattedList(),
                     'target_name': this.state.selected_class_feature,
-                    'random_state': 0,
+                    'show_unknown_only': this.state.show_unknown_only,
                     'tsne_seed' : 0,
-                    'tsne_perplexity': 30.0,
+                    'tsne_perplexity': 30.0
+                },
+                'image_config': {
+                    'random_state': 0,
                     'color_by': 'model_prediction',
-
-                    'model_config': {
-                        'model_name': this.state.model_params_selected_model,
-                        'k_means_n_clusters': parseInt(this.state.model_params_k_means_n_clusters),
-                        'tabncd_n_clusters': parseInt(this.state.model_params_tabncd_n_clusters),
-                        'tabncd_cosine_topk': parseFloat(this.state.model_params_tabncd_cosine_topk),
-                        'tabncd_w1': parseFloat(this.state.model_params_tabncd_w1),
-                        'tabncd_w2': parseFloat(this.state.model_params_tabncd_w2),
-                        'tabncd_classifier_lr': parseFloat(this.state.model_params_tabncd_classifier_lr),
-                        'tabncd_cluster_lr': parseFloat(this.state.model_params_tabncd_cluster_lr),
-                        'tabncd_k_neighbors': parseInt(this.state.model_params_tabncd_k_neighbors),
-                        'tabncd_dropout': parseFloat(this.state.model_params_tabncd_dropout),
-                        'tabncd_activation_fct': this.state.model_params_tabncd_activation_fct
-                    }
+                    'model_config': model_config
                 }
-            )
+            })
         }
         fetch('/runClustering', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
@@ -517,8 +551,8 @@ class FullPage extends React.Component {
                                            onRawDataButtonClick={this.onRawDataButtonClick}
                                            onProjectionButtonClick={this.onProjectionButtonClick}
 
-                                           onShowModelPredictionSwitchChange={this.onShowModelPredictionSwitchChange}
-                                           show_model_prediction={this.state.show_model_prediction}
+                                           onShowUnknownOnlySwitchChange={this.onShowUnknownOnlySwitchChange}
+                                           show_unknown_only={this.state.show_unknown_only}
                         />
                     </Row>
                 </Col>

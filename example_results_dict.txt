@@ -1,0 +1,20 @@
+{ dataset_name: {
+	tsne+datetime: {
+		tsne_config: { ... }  <= Attributes such as : [used_features,
+														known_classes,
+														unknown_classes,
+														target_name,
+														show_unknown_only,
+														tsne_seed,
+														tsne_perplexity]
+		tsne_filepath : "./results/tsne_arrays/...csv"
+		images_configurations: {
+			image+datetime: {
+				image_configuration: { ... }  <= Attributes such as: [color_by,
+																	  model_config,
+																	  ...]
+			    image_filepath: "./results/images_folder/...png"
+			}
+		}
+	}
+}

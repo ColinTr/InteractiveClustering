@@ -54,14 +54,14 @@ class DataVisualization extends React.Component {
                                 <div className="form-check form-switch" style={{display: "flex", alignItems: "center"}}>
                                     <input className="form-check-input"
                                            type="checkbox"
-                                           key="switch_show_model_prediction"
-                                           id="switch_show_model_prediction"
-                                           onChange={() => this.props.onShowModelPredictionSwitchChange()}
-                                           checked={this.props.show_model_prediction}
+                                           key="switch_show_unknown_only"
+                                           id="switch_show_unknown_only"
+                                           onChange={() => this.props.onShowUnknownOnlySwitchChange()}
+                                           checked={this.props.show_unknown_only}
                                            style={{marginRight: "10px"}}
                                     />
-                                    <label className="form-check-label" htmlFor="switch_show_model_prediction">
-                                        Show model prediction
+                                    <label className="form-check-label" htmlFor="switch_show_unknown_only">
+                                        Show unknown classes only
                                     </label>
                                 </div>
                             </Row>
