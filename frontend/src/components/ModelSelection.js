@@ -7,87 +7,16 @@ import Row from "react-bootstrap/Row";
 import KMeansParameters from "./models_parameters/KMeansParameters";
 import TabularNCDParameters from "./models_parameters/TabularNCDParameters";
 import '../App.css';
-import fireSwalError from "./swal_functions";
 
 class ModelSelection extends React.Component {
-
-    // Default k means parameters :
-    default_kmeans_n_clusters = 10
-
-    // Default TabularNCD parameters :
-    default_tabncd_n_clusters = 10
-    default_tabncd_cosine_topk = 10
-    default_tabncd_w1 = 0.8
-    default_tabncd_w2 = 0.8
-    default_tabncd_classifier_lr = 0.001
-    default_tabncd_cluster_lr = 0.001
-    default_tabncd_k_neighbors = 5
-    default_tabncd_dropout = 0.2
-    default_tabncd_activation_fct = "Sigmoid"
 
     constructor(props) {
         super(props);
         this.state = {
-            selected_model : "tabularncd",
-
             parameters_to_display : null,
-
-            // k means parameters :
-            k_means_n_clusters: this.default_kmeans_n_clusters,
-
-            // TabularNCD parameters :
-            tabncd_n_clusters : this.default_tabncd_n_clusters,
-            tabncd_cosine_topk : this.default_tabncd_cosine_topk,
-            tabncd_w1 : this.default_tabncd_w1,
-            tabncd_w2 : this.default_tabncd_w2,
-            tabncd_classifier_lr : this.default_tabncd_classifier_lr,
-            tabncd_cluster_lr : this.default_tabncd_cluster_lr,
-            tabncd_k_neighbors : this.default_tabncd_k_neighbors,
-            tabncd_dropout : this.default_tabncd_dropout,
-            tabncd_activation_fct : this.default_tabncd_activation_fct,
         };
 
         this.state.parameters_to_display = this.get_tabularncd_state_parameters()
-    }
-
-    on_kmeans_n_clusters_change = (event) => {
-        this.setState({k_means_n_clusters: event.target.value})
-    }
-
-    on_tabncd_n_clusters_change = (event) => {
-        this.setState({tabncd_n_clusters: event.target.value})
-    }
-
-    on_tabncd_cosine_topk_change = (event) => {
-        this.setState({tabncd_cosine_topk: event.target.value})
-    }
-
-    on_tabncd_w1_change = (event) => {
-        this.setState({tabncd_w1: event.target.value})
-    }
-
-    on_tabncd_w2_change = (event) => {
-        this.setState({tabncd_w2: event.target.value})
-    }
-
-    on_tabncd_classifier_lr_change = (event) => {
-        this.setState({tabncd_classifier_lr: event.target.value})
-    }
-
-    on_tabncd_cluster_lr_change = (event) => {
-        this.setState({tabncd_cluster_lr: event.target.value})
-    }
-
-    on_tabncd_k_neighbors_change = (event) => {
-        this.setState({tabncd_k_neighbors: event.target.value})
-    }
-
-    on_tabncd_dropout_change = (event) => {
-        this.setState({tabncd_dropout: event.target.value})
-    }
-
-    on_tabncd_activation_fct_change = (event) => {
-        this.setState({tabncd_activation_fct: event.target.value})
     }
 
     set_display_to_kmeans = () => {
@@ -101,8 +30,10 @@ class ModelSelection extends React.Component {
     get_kmeans_state_parameters = () => {
         return (
             <KMeansParameters
-                on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
-                n_clusters_value={this.state.k_means_n_clusters}
+                on_kmeans_n_clusters_change={this.props.on_kmeans_n_clusters_change}
+                n_clusters_value={this.props.k_means_n_clusters}
+                onKMeansTrainOnUknownClassesOnlySwitchChange={this.props.onKMeansTrainOnUknownClassesOnlySwitchChange}
+                model_params_kmeans_train_on_unknown_classes_only={this.props.model_params_kmeans_train_on_unknown_classes_only}
             />
         )
     }
@@ -110,30 +41,30 @@ class ModelSelection extends React.Component {
     get_tabularncd_state_parameters = () => {
         return (
             <TabularNCDParameters
-                on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
-                tabncd_n_clusters_value={this.state.tabncd_n_clusters}
-                on_tabncd_cosine_topk_change={this.on_tabncd_cosine_topk_change}
-                tabncd_cosine_topk_value={this.state.tabncd_cosine_topk}
-                on_tabncd_w1_change={this.on_tabncd_w1_change}
-                tabncd_w1_value={this.state.tabncd_w1}
-                on_tabncd_w2_change={this.on_tabncd_w2_change}
-                tabncd_w2_value={this.state.tabncd_w2}
-                on_tabncd_classifier_lr_change={this.on_tabncd_classifier_lr_change}
-                tabncd_classifier_lr_value={this.state.tabncd_classifier_lr}
-                on_tabncd_cluster_lr_change={this.on_tabncd_cluster_lr_change}
-                tabncd_cluster_lr_value={this.state.tabncd_cluster_lr}
-                on_tabncd_k_neighbors_change={this.on_tabncd_k_neighbors_change}
-                tabncd_k_neighbors_value={this.state.tabncd_k_neighbors}
-                on_tabncd_dropout_change={this.on_tabncd_dropout_change}
-                tabncd_dropout_value={this.state.tabncd_dropout}
-                on_tabncd_activation_fct_change={this.on_tabncd_activation_fct_change}
-                tabncd_activation_fct_value={this.state.tabncd_activation_fct}
+                on_tabncd_n_clusters_change={this.props.on_tabncd_n_clusters_change}
+                tabncd_n_clusters_value={this.props.tabncd_n_clusters}
+                on_tabncd_cosine_topk_change={this.props.on_tabncd_cosine_topk_change}
+                tabncd_cosine_topk_value={this.props.tabncd_cosine_topk}
+                on_tabncd_w1_change={this.props.on_tabncd_w1_change}
+                tabncd_w1_value={this.props.tabncd_w1}
+                on_tabncd_w2_change={this.props.on_tabncd_w2_change}
+                tabncd_w2_value={this.props.tabncd_w2}
+                on_tabncd_classifier_lr_change={this.props.on_tabncd_classifier_lr_change}
+                tabncd_classifier_lr_value={this.props.tabncd_classifier_lr}
+                on_tabncd_cluster_lr_change={this.props.on_tabncd_cluster_lr_change}
+                tabncd_cluster_lr_value={this.props.tabncd_cluster_lr}
+                on_tabncd_k_neighbors_change={this.props.on_tabncd_k_neighbors_change}
+                tabncd_k_neighbors_value={this.props.tabncd_k_neighbors}
+                on_tabncd_dropout_change={this.props.on_tabncd_dropout_change}
+                tabncd_dropout_value={this.props.tabncd_dropout}
+                on_tabncd_activation_fct_change={this.props.on_tabncd_activation_fct_change}
+                tabncd_activation_fct_value={this.props.tabncd_activation_fct}
             />
         )
     }
 
     onDropDownChange = event => {
-        this.setState({ selected_model: event.target.value });
+        this.props.updateSelectedModel(event.target.value)
 
         if (event.target.value === "k_means") {
             this.set_display_to_kmeans()
@@ -145,16 +76,6 @@ class ModelSelection extends React.Component {
             this.setState({parameters_to_display : <p>Unimplemented model</p>})
         }
     };
-
-    onRunButtonClick = () => {
-        console.log("ToDo run model " + this.state.selected_model)
-        fireSwalError("Not implemented yet!")
-    }
-
-    onAutoParamsButtonClick = () => {
-        console.log("ToDo auto params for " + this.state.selected_model)
-        fireSwalError("Not implemented yet!")
-    }
 
     render() {
         return (
@@ -187,12 +108,12 @@ class ModelSelection extends React.Component {
 
                     <Row className="d-flex flex-row" style={{paddingTop: "10px"}}>
                         <Col className="col-6 d-flex flex-column">
-                            <Button style={{width:'120px'}} onClick={() => this.onRunButtonClick()}>
+                            <Button style={{width:'120px'}} onClick={() => this.props.onRunModelButtonClick()}>
                                 Run
                             </Button>
                         </Col>
                         <Col variant="primary" className="col-6 d-flex flex-column align-items-end">
-                            <Button variant="success" style={{width:'120px'}} onClick={() => this.onAutoParamsButtonClick()}>
+                            <Button variant="success" style={{width:'120px'}} onClick={() => this.props.onAutoParamsButtonClick()}>
                                 Auto params
                             </Button>
                         </Col>

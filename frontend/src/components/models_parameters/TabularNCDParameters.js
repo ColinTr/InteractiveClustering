@@ -184,9 +184,9 @@ const TabularNCDParameters = (props) => {
                     >
                         <option value="sigmoid">Sigmoid</option>
                         <option value="relu">ReLu</option>
-                        <option value="non">None</option>
+                        <option value="none">None</option>
                     </Form.Select>
-                </Col>
+                </Col>s
             </Row>
         </Container>
     )

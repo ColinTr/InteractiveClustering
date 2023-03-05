@@ -11,6 +11,23 @@ import RulesGenerator from "./RulesGenerator";
 
 
 class FullPage extends React.Component {
+
+    default_model_params = {
+        // Default k means parameters :
+        default_kmeans_n_clusters : 10,
+
+        // Default TabularNCD parameters :
+        default_tabncd_n_clusters : 10,
+        default_tabncd_cosine_topk : 10,
+        default_tabncd_w1 : 0.8,
+        default_tabncd_w2 : 0.8,
+        default_tabncd_classifier_lr : 0.001,
+        default_tabncd_cluster_lr : 0.001,
+        default_tabncd_k_neighbors : 5,
+        default_tabncd_dropout : 0.2,
+        default_tabncd_activation_fct : "Sigmoid"
+    }
+
     constructor(props) {
         super(props);
 
@@ -33,6 +50,23 @@ class FullPage extends React.Component {
             decision_tree_training_mode: "multi_class",
             decision_tree_max_depth: null,
             decision_tree_min_samples_split: 2,
+
+            model_params_selected_model : "tabularncd",
+
+            // k means parameters :
+            model_params_k_means_n_clusters: this.default_model_params.default_kmeans_n_clusters,
+            model_params_kmeans_train_on_unknown_classes_only: false,
+
+            // TabularNCD parameters :
+            model_params_tabncd_n_clusters : this.default_model_params.default_tabncd_n_clusters,
+            model_params_tabncd_cosine_topk : this.default_model_params.default_tabncd_cosine_topk,
+            model_params_tabncd_w1 : this.default_model_params.default_tabncd_w1,
+            model_params_tabncd_w2 : this.default_model_params.default_tabncd_w2,
+            model_params_tabncd_classifier_lr : this.default_model_params.default_tabncd_classifier_lr,
+            model_params_tabncd_cluster_lr : this.default_model_params.default_tabncd_cluster_lr,
+            model_params_tabncd_k_neighbors : this.default_model_params.default_tabncd_k_neighbors,
+            model_params_tabncd_dropout : this.default_model_params.default_tabncd_dropout,
+            model_params_tabncd_activation_fct : this.default_model_params.default_tabncd_activation_fct,
         };
 
         this.state = this.initial_state;
@@ -151,67 +185,78 @@ class FullPage extends React.Component {
         this.setState({search_filtered_unique_values_list: updated_filtered_list, unique_values_search_query: ''})
     }
 
+    getSelectedFeaturesFormattedList = () => {
+        const selected_features = []
+        this.state.formatted_features.forEach(feature => {
+            if(feature.checked === true && feature.name !== this.state.selected_class_feature){
+                selected_features.push(feature.name)
+            }
+        })
+        return selected_features
+    }
+
+    getKnownClassesFormattedList = () => {
+        const known_classes = []
+        this.state.class_values_to_display.forEach(unique_value => {
+            if(unique_value.checked === true){
+                known_classes.push(unique_value.name)
+            }
+        })
+        return known_classes
+    }
+
+    getUnknownClassesFormattedList = () => {
+        const unknown_classes = []
+        this.state.class_values_to_display.forEach(unique_value => {
+            if(unique_value.checked === false){
+                unknown_classes.push(unique_value.name)
+            }
+        })
+        return unknown_classes
+    }
+
     onRawDataButtonClick = () => {
+        // Sanity checks:
         if(this.state.formatted_features == null){
             fireSwalError("Please load a dataset to visualize")
-        } else {
-            if(this.state.selected_class_feature == null){
-                fireSwalError("Please select a target feature")
-            } else {
-                const selected_features = []
-                this.state.formatted_features.forEach(feature => {
-                    if(feature.checked === true && feature.name !== this.state.selected_class_feature){
-                        selected_features.push(feature.name)
-                    }
-                })
+            return
+        }
+        if(this.state.selected_class_feature == null){
+            fireSwalError("Please select a target feature")
+            return
+        }
 
-                const known_classes = []
-                this.state.class_values_to_display.forEach(unique_value => {
-                    if(unique_value.checked === true){
-                        known_classes.push(unique_value.name)
-                    }
-                })
-
-                const unknown_classes = []
-                this.state.class_values_to_display.forEach(unique_value => {
-                    if(unique_value.checked === false){
-                        unknown_classes.push(unique_value.name)
-                    }
-                })
-
-                const requestOptions = {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        'dataset_name': this.state.dataset_name,
-                        'selected_features': selected_features,
-                        'target_name': this.state.selected_class_feature,
-                        'tsne_seed' : 0,
-                        'tsne_perplexity': 30.0,
-                        'known_classes': known_classes,
-                        'unknown_classes': unknown_classes,
-                        'color_by': 'known_only'
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                'dataset_name': this.state.dataset_name,
+                'selected_features': this.getSelectedFeaturesFormattedList(),
+                'known_classes': this.getKnownClassesFormattedList(),
+                'unknown_classes': this.getUnknownClassesFormattedList(),
+                'target_name': this.state.selected_class_feature,
+                'tsne_seed' : 0,
+                'tsne_perplexity': 30.0,
+                'color_by': 'known_only'
+            })
+        }
+        fetch('/getDatasetTSNE', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
-                fetch('/getDatasetTSNE', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
-                    .then(serverPromise => {
-                        if (serverPromise.status === 500) {
-                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
-                        }
-                        if (serverPromise.status === 422) {
-                            serverPromise.json().then(error => {
-                                fireSwalError('Status 422 - Server error', error['error_message'])
-                            })
-                        }
-                        if (serverPromise.status === 200) {
-                            serverPromise.blob().then(image_response_blob => {
-                                const imageObjectURL = URL.createObjectURL(image_response_blob);
-                                this.setState({image_to_display: imageObjectURL})
-                            })
-                        }
+                if (serverPromise.status === 200) {
+                    serverPromise.blob().then(image_response_blob => {
+                        const imageObjectURL = URL.createObjectURL(image_response_blob);
+                        this.setState({image_to_display: imageObjectURL})
                     })
-            }
-        }
+                }
+            })
     }
 
     onProjectionButtonClick = () => {
@@ -314,6 +359,124 @@ class FullPage extends React.Component {
         console.log("ToDo update the rules based on the result of the agglomerative clustering")
     }
 
+    onRunModelButtonClick = () => {
+        // Sanity checks:
+        if(this.state.formatted_features == null){
+            fireSwalError("Please load a dataset to visualize")
+            return
+        }
+        if(this.state.selected_class_feature == null){
+            fireSwalError("Please select a target feature")
+            return
+        }
+        if(this.state.model_params_selected_model === "tabularncd"){
+            fireSwalError("Not implemented yet!", "Please use k-means instead.")
+            return
+        }
+
+        // Build the request
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+                { 'dataset_name': this.state.dataset_name,
+                    'selected_features': this.getSelectedFeaturesFormattedList(),
+                    'known_classes': this.getKnownClassesFormattedList(),
+                    'unknown_classes': this.getUnknownClassesFormattedList(),
+                    'target_name': this.state.selected_class_feature,
+                    'random_state': 0,
+                    'tsne_seed' : 0,
+                    'tsne_perplexity': 30.0,
+                    'color_by': 'model_prediction',
+
+                    'model_config': {
+                        'model_name': this.state.model_params_selected_model,
+                        'k_means_n_clusters': parseInt(this.state.model_params_k_means_n_clusters),
+                        'tabncd_n_clusters': parseInt(this.state.model_params_tabncd_n_clusters),
+                        'tabncd_cosine_topk': parseFloat(this.state.model_params_tabncd_cosine_topk),
+                        'tabncd_w1': parseFloat(this.state.model_params_tabncd_w1),
+                        'tabncd_w2': parseFloat(this.state.model_params_tabncd_w2),
+                        'tabncd_classifier_lr': parseFloat(this.state.model_params_tabncd_classifier_lr),
+                        'tabncd_cluster_lr': parseFloat(this.state.model_params_tabncd_cluster_lr),
+                        'tabncd_k_neighbors': parseInt(this.state.model_params_tabncd_k_neighbors),
+                        'tabncd_dropout': parseFloat(this.state.model_params_tabncd_dropout),
+                        'tabncd_activation_fct': this.state.model_params_tabncd_activation_fct
+                    }
+                }
+            )
+        }
+        fetch('/runClustering', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
+                    })
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.blob().then(image_response_blob => {
+                        const imageObjectURL = URL.createObjectURL(image_response_blob);
+                        this.setState({image_to_display: imageObjectURL})
+                    })
+                }
+            })
+    }
+
+    onAutoParamsButtonClick = () => {
+        console.log("ToDo auto params for " + this.state.model_params_selected_model)
+        fireSwalError("Not implemented yet!")
+    }
+
+    updateSelectedModel = (model_name) => {
+        this.setState({ model_params_selected_model: model_name })
+    }
+
+    on_kmeans_n_clusters_change = (event) => {
+        this.setState({model_params_k_means_n_clusters: event.target.value})
+    }
+
+    on_tabncd_n_clusters_change = (event) => {
+        this.setState({model_params_tabncd_n_clusters: event.target.value})
+    }
+
+    on_tabncd_cosine_topk_change = (event) => {
+        this.setState({model_params_tabncd_cosine_topk: event.target.value})
+    }
+
+    on_tabncd_w1_change = (event) => {
+        this.setState({model_params_tabncd_w1: event.target.value})
+    }
+
+    on_tabncd_w2_change = (event) => {
+        this.setState({model_params_tabncd_w2: event.target.value})
+    }
+
+    on_tabncd_classifier_lr_change = (event) => {
+        this.setState({model_params_tabncd_classifier_lr: event.target.value})
+    }
+
+    on_tabncd_cluster_lr_change = (event) => {
+        this.setState({model_params_tabncd_cluster_lr: event.target.value})
+    }
+
+    on_tabncd_k_neighbors_change = (event) => {
+        this.setState({model_params_tabncd_k_neighbors: event.target.value})
+    }
+
+    on_tabncd_dropout_change = (event) => {
+        this.setState({model_params_tabncd_dropout: event.target.value})
+    }
+
+    on_tabncd_activation_fct_change = (event) => {
+        this.setState({model_params_tabncd_activation_fct: event.target.value})
+    }
+
+    onKMeansTrainOnUknownClassesOnlySwitchChange = () => {
+        this.setState({model_params_kmeans_train_on_unknown_classes_only: !this.state.model_params_kmeans_train_on_unknown_classes_only})
+    }
+
     render() {
         return (
             <Row style={{height: '100vh', width:"90vw"}} className="d-flex flex-row justify-content-center align-items-center">
@@ -362,7 +525,35 @@ class FullPage extends React.Component {
 
                 <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>
                     <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
-                        <ModelSelection />
+                        <ModelSelection onRunModelButtonClick={this.onRunModelButtonClick}
+                                        onAutoParamsButtonClick={this.onAutoParamsButtonClick}
+                                        updateSelectedModel={this.updateSelectedModel}
+                                        model_params_selected_model={this.state.model_params_selected_model}
+
+                                        on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
+                                        tabncd_n_clusters={this.state.model_params_tabncd_n_clusters}
+                                        on_tabncd_cosine_topk_change={this.on_tabncd_cosine_topk_change}
+                                        tabncd_cosine_topk={this.state.model_params_tabncd_cosine_topk}
+                                        on_tabncd_w1_change={this.on_tabncd_w1_change}
+                                        tabncd_w1={this.state.model_params_tabncd_w1}
+                                        on_tabncd_w2_change={this.on_tabncd_w2_change}
+                                        tabncd_w2={this.state.model_params_tabncd_w2}
+                                        on_tabncd_classifier_lr_change={this.on_tabncd_classifier_lr_change}
+                                        tabncd_classifier_lr={this.state.model_params_tabncd_classifier_lr}
+                                        on_tabncd_cluster_lr_change={this.on_tabncd_cluster_lr_change}
+                                        tabncd_cluster_lr={this.state.model_params_tabncd_cluster_lr}
+                                        on_tabncd_k_neighbors_change={this.on_tabncd_k_neighbors_change}
+                                        tabncd_k_neighbors={this.state.model_params_tabncd_k_neighbors}
+                                        on_tabncd_dropout_change={this.on_tabncd_dropout_change}
+                                        tabncd_dropout={this.state.model_params_tabncd_dropout}
+                                        on_tabncd_activation_fct_change={this.on_tabncd_activation_fct_change}
+                                        tabncd_activation_fct={this.state.model_params_tabncd_activation_fct}
+
+                                        on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
+                                        k_means_n_clusters={this.state.model_params_k_means_n_clusters}
+                                        onKMeansTrainOnUknownClassesOnlySwitchChange={this.onKMeansTrainOnUknownClassesOnlySwitchChange}
+                                        model_params_kmeans_train_on_unknown_classes_only={this.state.model_params_kmeans_train_on_unknown_classes_only}
+                        />
                     </Row>
                     <Row className="my_row py-2 d-flex flex-row">
                         <RulesGenerator onDecisionTreeRadioButtonChange={this.onDecisionTreeRadioButtonChange}
