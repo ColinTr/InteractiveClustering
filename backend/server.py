@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, session, send_file
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from matplotlib.figure import Figure
 from sklearn.cluster import KMeans
@@ -309,6 +310,7 @@ def runClustering():
         session['last_clustering_prediction'] = clustering_prediction.tolist()
         session['last_clustering_target_name'] = target_name
         session['last_clustering_original_target'] = np.array(dataset[target_name]).tolist()
+        session['last_clustering_known_classes'] = known_classes
         session['last_clustering_unknown_classes'] = unknown_classes
         session['last_clustering_selected_features'] = selected_features
 
@@ -354,6 +356,7 @@ def runRulesGeneration():
         last_clustering_prediction = session.get('last_clustering_prediction')
         last_clustering_target_name = session.get('last_clustering_target_name')
         last_clustering_original_target = session.get('last_clustering_original_target')
+        last_clustering_known_classes = session.get('last_clustering_known_classes')
         last_clustering_unknown_classes = session.get('last_clustering_unknown_classes')
         last_clustering_selected_features = session.get('last_clustering_selected_features')
 
@@ -373,25 +376,41 @@ def runRulesGeneration():
             decision_tree_min_samples_split = eval(decision_tree_min_samples_split)
         random_state = decision_tree_config['random_state']
 
-        clf = DecisionTreeClassifier(max_depth=decision_tree_max_depth,
-                                     min_samples_split=decision_tree_min_samples_split,
-                                     random_state=random_state)
-
         if decision_tree_unknown_classes_only is True:
             mask = np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)
 
-            clf.fit(dataset[last_clustering_selected_features][mask], last_clustering_prediction)
-            accuracy_score = clf.score(dataset[last_clustering_selected_features][mask], last_clustering_prediction)
+            x = dataset[last_clustering_selected_features][mask]
+            y = last_clustering_prediction
         else:
-            full_target = np.array(last_clustering_original_target)
-            full_target[np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)] = last_clustering_prediction
+            x = dataset[last_clustering_selected_features]
+            y = np.array(last_clustering_original_target)
+            y[np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)] = last_clustering_prediction
 
-            clf.fit(dataset[last_clustering_selected_features], full_target)
-            accuracy_score = clf.score(dataset[last_clustering_selected_features], full_target)
+        if decision_tree_training_mode == "multi_class":
+            clf = DecisionTreeClassifier(max_depth=decision_tree_max_depth,
+                                         min_samples_split=decision_tree_min_samples_split,
+                                         random_state=random_state)
+            clf.fit(x, y)
+            accuracy_score = clf.score(x, y)
+            text_representation = tree.export_text(clf, feature_names=last_clustering_selected_features)
+        elif decision_tree_training_mode == "one_vs_rest":
+            base_clf = DecisionTreeClassifier(max_depth=decision_tree_max_depth,
+                                              min_samples_split=decision_tree_min_samples_split,
+                                              random_state=random_state)
+            clf = OneVsRestClassifier(base_clf)
+            clf.fit(x, y)
+            accuracy_score = clf.score(x, y)
 
-        text_representation = tree.export_text(clf, feature_names=last_clustering_selected_features)
+            text_representation = {}
+            for estimator, c in zip(clf.estimators_, clf.classes_):
+                class_or_cluster = "Class " if c in last_clustering_known_classes else "Cluster "
+                text_representation[class_or_cluster + str(c)] = tree.export_text(estimator, feature_names=last_clustering_selected_features)
+        else:
+            return "Unknown decision tree training mode", 400
 
-        return jsonify({"text_rules": text_representation, "accuracy_score": accuracy_score})
+        return jsonify({"decision_tree_training_mode": decision_tree_training_mode,
+                        "text_rules": text_representation,
+                        "accuracy_score": accuracy_score})
     else:
         return "Dataset not loaded", 400
 

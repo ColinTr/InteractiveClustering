@@ -1,6 +1,28 @@
 import React from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
+import Row from "react-bootstrap/Row";
+
+function formatRulesText(json_response, training_mode) {
+    if(training_mode === "multi_class"){
+        return (<pre id="json"> {json_response} </pre>)
+    }
+    if(training_mode === "one_vs_rest"){
+        const arr = [];
+        Object.keys(json_response).forEach((key) => {
+            arr.push(
+                <Row key={"row_" + key}>
+                    {key}
+                    <pre id="json"> {json_response[key]} </pre>
+                    <hr />
+                </Row>
+            )
+        })
+        return (arr)
+    }
+
+    return null
+}
 
 const RulesDisplayModal = (props) => {
     return (
@@ -9,13 +31,11 @@ const RulesDisplayModal = (props) => {
                 <Modal.Title>Rules for the last clustering run</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <div>This model had {(props.decision_tree_accuracy_score * 100).toFixed(2)}% accuracy.</div>
+                <div>This model had {(props.decision_tree_response_accuracy_score * 100).toFixed(2)}% training accuracy.</div>
 
                 <hr />
 
-                <pre id="json">
-                    {props.text_rules}
-                </pre>
+                {formatRulesText(props.decision_tree_response_text_rules, props.decision_tree_response_training_mode)}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={props.closeRulesModal}>
