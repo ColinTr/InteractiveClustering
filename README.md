@@ -23,7 +23,7 @@ python -m venv backend/venv
 ```bash
 # Activate the virtual environment...
 # ...for Windows:
-backend\venv\Scripts\activate
+.\backend\venv\Scripts\activate
 # ...for Linux/Mac:
 source backend/venv/bin/activate
 ```
