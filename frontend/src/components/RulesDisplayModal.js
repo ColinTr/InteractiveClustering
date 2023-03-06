@@ -9,6 +9,10 @@ const RulesDisplayModal = (props) => {
                 <Modal.Title>Rules for the last clustering run</Modal.Title>
             </Modal.Header>
             <Modal.Body>
+                <div>This model had {(props.decision_tree_accuracy_score * 100).toFixed(2)}% accuracy.</div>
+
+                <hr />
+
                 <pre id="json">
                     {props.text_rules}
                 </pre>

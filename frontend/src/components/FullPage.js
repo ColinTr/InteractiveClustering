@@ -56,6 +56,7 @@ class FullPage extends React.Component {
             decision_tree_min_samples_split: 2,
             rules_modal_is_open: false,
             text_rules: "",
+            decision_tree_accuracy_score: null,
 
             model_params_selected_model : "tabularncd",
 
@@ -252,7 +253,9 @@ class FullPage extends React.Component {
                 'image_config': {
                     'random_state': 0,
                     'color_by': 'known_only',
-                    "model_config": ""
+                    "model_config": "",
+                    'known_classes': this.getKnownClassesFormattedList(),
+                    'unknown_classes': this.getUnknownClassesFormattedList()
                 }
             })
         }
@@ -363,7 +366,7 @@ class FullPage extends React.Component {
                 }
                 if (serverPromise.status === 200) {
                     serverPromise.json().then(response_json => {
-                        this.setState({text_rules: response_json["text_rules"]})
+                        this.setState({text_rules: response_json["text_rules"], decision_tree_accuracy_score: response_json["accuracy_score"]})
 
                         Swal.mixin({
                             toast: true,
@@ -490,7 +493,9 @@ class FullPage extends React.Component {
                 'image_config': {
                     'random_state': 0,
                     'color_by': 'model_prediction',
-                    'model_config': model_config
+                    'model_config': model_config,
+                    'known_classes': this.getKnownClassesFormattedList(),
+                    'unknown_classes': this.getUnknownClassesFormattedList()
                 }
             })
         }
@@ -586,6 +591,7 @@ class FullPage extends React.Component {
                                    openRulesModal={this.openRulesModal}
                                    closeRulesModal={this.closeRulesModal}
                                    text_rules={this.state.text_rules}
+                                   decision_tree_accuracy_score={this.state.decision_tree_accuracy_score}
                 />
 
                 <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>

@@ -23,6 +23,12 @@ def corsify_response(response):
     return response
 
 
+def equal_dicts(d1, d2, ignore_keys):
+    d1_filtered = {k: v for k, v in d1.items() if k not in ignore_keys}
+    d2_filtered = {k: v for k, v in d2.items() if k not in ignore_keys}
+    return d1_filtered == d2_filtered
+
+
 @app.route('/getFileHeader', methods=['POST'])
 def getFileHeader():
     data = request.get_json()
@@ -114,10 +120,17 @@ def findTSNEConfig(results_dict, dataset_name, tsne_config_to_find):
         for tsne_run_name in results_dict[dataset_name].keys():
             tsne_run = results_dict[dataset_name][tsne_run_name]
 
-            if tsne_run["tsne_config"] == tsne_config_to_find:
-                if os.path.isfile(tsne_run['tsne_filepath']):
-                    tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
-                    return tsne_array, tsne_run_name
+            # In the case where we show all classes, the known and unknown classes don't matter in the T-SNE
+            if tsne_config_to_find['show_unknown_only'] is False and tsne_run["tsne_config"]['show_unknown_only'] is False:
+                if equal_dicts(tsne_run["tsne_config"], tsne_config_to_find, ['known_classes', 'unknown_classes']):
+                    if os.path.isfile(tsne_run['tsne_filepath']):
+                        tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
+                        return tsne_array, tsne_run_name
+            # If we show only the known classes, the whole config should be equal
+            elif tsne_run["tsne_config"] == tsne_config_to_find:
+                    if os.path.isfile(tsne_run['tsne_filepath']):
+                        tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
+                        return tsne_array, tsne_run_name
 
     return None, None
 
@@ -168,14 +181,15 @@ def getDatasetTSNE():
         # Try to find the configuration in the results_dict
         tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
 
-        # Try to find if the image was already generated beforehand
         if tsne_array is not None:
+            # Try to find if the image was already generated beforehand
             image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
             if image_filepath is not None:
                 return send_file(image_filepath, mimetype='image/png')
 
         # If this configuration wasn't found in the configuration, it needs to be run
-        tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
+        if tsne_array is None:
+            tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
 
         # If the image doesn't exist, we need to create it
         image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
@@ -198,7 +212,9 @@ def getDatasetTSNE():
             "image_configuration": {
                 "random_state": random_state,
                 "color_by": color_by,
-                "model_config": ""
+                "model_config": "",
+                "known_classes": known_classes,
+                "unknown_classes": unknown_classes
             },
             "image_filepath": os.path.join(image_folder_path, image_filename)
         }
@@ -254,7 +270,8 @@ def runClustering():
                 return send_file(image_filepath, mimetype='image/png')
 
         # If this configuration wasn't found in the configuration, it needs to be run
-        tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
+        if tsne_array is None:
+            tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
 
         # Generate the image based on the prediction
         if model_name == "k_means":
@@ -314,7 +331,9 @@ def runClustering():
             "image_configuration": {
                 "random_state": random_state,
                 "color_by": color_by,
-                "model_config": model_config
+                "model_config": model_config,
+                "known_classes": known_classes,
+                "unknown_classes": unknown_classes
             },
             "image_filepath": os.path.join(image_folder_path, image_filename),
         }
@@ -343,8 +362,15 @@ def runRulesGeneration():
         decision_tree_training_mode = decision_tree_config['decision_tree_training_mode']
         decision_tree_unknown_classes_only = decision_tree_config['decision_tree_unknown_classes_only']
         decision_tree_max_depth = decision_tree_config['decision_tree_max_depth']
-        decision_tree_max_depth = None if decision_tree_max_depth == '' else eval(decision_tree_max_depth)
-        decision_tree_min_samples_split = eval(decision_tree_config['decision_tree_min_samples_split'])
+        if decision_tree_max_depth == '':
+            decision_tree_max_depth = None
+        elif type(decision_tree_max_depth) is str:
+            decision_tree_max_depth = eval(decision_tree_max_depth)
+        decision_tree_min_samples_split = decision_tree_config['decision_tree_min_samples_split']
+        if decision_tree_min_samples_split == '':
+            decision_tree_min_samples_split = None
+        elif type(decision_tree_min_samples_split) is str:
+            decision_tree_min_samples_split = eval(decision_tree_min_samples_split)
         random_state = decision_tree_config['random_state']
 
         clf = DecisionTreeClassifier(max_depth=decision_tree_max_depth,
@@ -355,17 +381,17 @@ def runRulesGeneration():
             mask = np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)
 
             clf.fit(dataset[last_clustering_selected_features][mask], last_clustering_prediction)
+            accuracy_score = clf.score(dataset[last_clustering_selected_features][mask], last_clustering_prediction)
         else:
             full_target = np.array(last_clustering_original_target)
             full_target[np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)] = last_clustering_prediction
 
             clf.fit(dataset[last_clustering_selected_features], full_target)
+            accuracy_score = clf.score(dataset[last_clustering_selected_features], full_target)
 
         text_representation = tree.export_text(clf, feature_names=last_clustering_selected_features)
 
-        print(text_representation)
-
-        return jsonify({"text_rules": text_representation})
+        return jsonify({"text_rules": text_representation, "accuracy_score": accuracy_score})
     else:
         return "Dataset not loaded", 400
 
