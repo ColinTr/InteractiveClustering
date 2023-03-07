@@ -31,9 +31,12 @@ const RulesDisplayModal = (props) => {
                 <Modal.Title>Rules for the last clustering run</Modal.Title>
             </Modal.Header>
             <Modal.Body>
+
                 <div>This model had {(props.decision_tree_response_accuracy_score * 100).toFixed(2)}% training accuracy.</div>
 
                 <hr />
+
+                <iframe title="pdf" width="100%" height="600px" srcDoc={props.decision_tree_response_pdf_file}></iframe>
 
                 {formatRulesText(props.decision_tree_response_text_rules, props.decision_tree_response_training_mode)}
             </Modal.Body>

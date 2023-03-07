@@ -1,15 +1,18 @@
-from flask import Flask, jsonify, request, session, send_file
+import shutil
+from flask import Flask, jsonify, request, session, send_file, make_response
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from matplotlib.figure import Figure
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
+from PyPDF2 import PdfMerger
 from flask_cors import CORS
 from sklearn import tree
 import seaborn as sns
 import pandas as pd
 import numpy as np
 import datetime
+import graphviz
 import json
 import os
 
@@ -392,7 +395,21 @@ def runRulesGeneration():
                                          random_state=random_state)
             clf.fit(x, y)
             accuracy_score = clf.score(x, y)
-            text_representation = tree.export_text(clf, feature_names=last_clustering_selected_features)
+
+            dot_data = tree.export_graphviz(clf, out_file=None,
+                                            feature_names=last_clustering_selected_features,
+                                            filled=True,
+                                            max_depth=decision_tree_max_depth,
+                                            # class_names=le.inverse_transform(np.unique(label_enc)),
+                                            proportion=False)
+
+            dot_data = dot_data[:15] + 'label = "This tree has ' + "{:.1f}".format(accuracy_score*100) + '% train accuracy";\n' + dot_data[15:]
+
+            graph = graphviz.Source(dot_data)
+            filename = graph.render(os.path.join(".", "results", "latest_exported_tree"))  # export PDF
+
+            return send_file(filename, mimetype='application/pdf')
+
         elif decision_tree_training_mode == "one_vs_rest":
             base_clf = DecisionTreeClassifier(max_depth=decision_tree_max_depth,
                                               min_samples_split=decision_tree_min_samples_split,
@@ -401,16 +418,39 @@ def runRulesGeneration():
             clf.fit(x, y)
             accuracy_score = clf.score(x, y)
 
-            text_representation = {}
+            datetime_string = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+            temp_folder = os.path.join(".", "results", "temp_folder_" + datetime_string)
+
+            pdfs_list = []
             for estimator, c in zip(clf.estimators_, clf.classes_):
-                class_or_cluster = "Class " if c in last_clustering_known_classes else "Cluster "
-                text_representation[class_or_cluster + str(c)] = tree.export_text(estimator, feature_names=last_clustering_selected_features)
+                dot_data = tree.export_graphviz(estimator, out_file=None,
+                                                feature_names=last_clustering_selected_features,
+                                                filled=True,
+                                                max_depth=decision_tree_max_depth,
+                                                # class_names=['REST', le.inverse_transform(np.unique(label_enc))[elem]],
+                                                proportion=False)
+
+                class_or_cluster = "Class" if c in last_clustering_known_classes else "Cluster"
+                dot_data = dot_data[:15] + 'label = "Tree for ' + class_or_cluster + ' ' + str(c) + ".\nWhole model had {:.1f}".format(accuracy_score*100) + '% average train accuracy";\n' + dot_data[15:]
+
+                graph = graphviz.Source(dot_data)
+                filename = graph.render(os.path.join(temp_folder, "class_" + str(c)))  # export PDF
+                pdfs_list.append(filename)
+
+            # Merge all the generated files into one
+            merger = PdfMerger()
+            for pdf_filename in pdfs_list:
+                merger.append(pdf_filename)
+            merged_filename = os.path.join(".", "results", "latest_exported_tree.pdf")
+            merger.write(merged_filename)
+            merger.close()
+
+            # Remove the individual PDF files
+            shutil.rmtree(temp_folder)
+
+            return send_file(merged_filename, mimetype='application/pdf')
         else:
             return "Unknown decision tree training mode", 400
-
-        return jsonify({"decision_tree_training_mode": decision_tree_training_mode,
-                        "text_rules": text_representation,
-                        "accuracy_score": accuracy_score})
     else:
         return "Dataset not loaded", 400
 

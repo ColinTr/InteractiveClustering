@@ -56,6 +56,7 @@ class FullPage extends React.Component {
             decision_tree_min_samples_split: 2,
             rules_modal_is_open: false,
             decision_tree_response_text_rules: "",
+            decision_tree_response_pdf_file: null,
             decision_tree_response_accuracy_score: null,
 
             model_params_selected_model : "tabularncd",
@@ -365,12 +366,10 @@ class FullPage extends React.Component {
                     })
                 }
                 if (serverPromise.status === 200) {
-                    serverPromise.json().then(response_json => {
-                        this.setState({
-                            decision_tree_response_training_mode: response_json["decision_tree_training_mode"],
-                            decision_tree_response_text_rules: response_json["text_rules"],
-                            decision_tree_response_accuracy_score: response_json["accuracy_score"]
-                        })
+                    serverPromise.blob().then(response_blob => {
+                        const file = URL.createObjectURL(response_blob)
+
+                        this.setState({decision_tree_response_pdf_file: file})
 
                         Swal.mixin({
                             toast: true,
@@ -387,6 +386,16 @@ class FullPage extends React.Component {
                             title: 'Rules generated'
                         })
                     })
+
+                    // serverPromise.json().then(response_json => {
+                    //     this.setState({
+                    //         decision_tree_response_training_mode: response_json["decision_tree_training_mode"],
+                    //         decision_tree_response_text_rules: response_json["text_rules"],
+                    //         decision_tree_response_accuracy_score: response_json["accuracy_score"]
+                    //     })
+//
+
+                    // })
                 }
             })
     }
@@ -576,11 +585,8 @@ class FullPage extends React.Component {
     }
 
     openRulesModal = () => {
-        if(this.state.decision_tree_response_text_rules === ""){
-            fireSwalError("No rules to display", "Please run a clustering before")
-        } else {
-            this.setState({rules_modal_is_open: true})
-        }
+        window.open(this.state.decision_tree_response_pdf_file)
+        // this.setState({rules_modal_is_open: true})
     }
 
     closeRulesModal = () => {
@@ -597,6 +603,7 @@ class FullPage extends React.Component {
                                    decision_tree_response_training_mode={this.state.decision_tree_response_training_mode}
                                    decision_tree_response_text_rules={this.state.decision_tree_response_text_rules}
                                    decision_tree_response_accuracy_score={this.state.decision_tree_response_accuracy_score}
+                                   decision_tree_response_pdf_file={this.state.decision_tree_response_pdf_file}
                 />
 
                 <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>

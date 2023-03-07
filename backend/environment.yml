@@ -1,0 +1,21 @@
+name: icvenv
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.10.9
+  - pip=22.2.2
+  - cudatoolkit=11.3
+  - pytorch=1.12.1
+  - torchvision=0.13.1
+  - numpy=1.23.1
+  - Flask=2.2.2
+  - flask_cors=3.0.10
+  - pandas=1.5.3
+  - scikit-learn=1.2.1
+  - seaborn=0.12.2
+  - matplotlib=3.7.0
+  - graphviz=2.50.0
+  - python-graphviz=0.20.1
+  - pydot=1.4.1
+  - pypdf2=2.10.5
