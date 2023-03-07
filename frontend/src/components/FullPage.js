@@ -585,7 +585,11 @@ class FullPage extends React.Component {
     }
 
     openRulesModal = () => {
-        window.open(this.state.decision_tree_response_pdf_file)
+        if(this.state.decision_tree_response_pdf_file === null){
+            fireSwalError("No rules to show")
+        } else {
+            window.open(this.state.decision_tree_response_pdf_file)
+        }
         // this.setState({rules_modal_is_open: true})
     }
 

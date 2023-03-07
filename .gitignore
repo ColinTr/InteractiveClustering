@@ -28,3 +28,6 @@ backend/results/tsne_arrays/*
 backend/results/results_dict.json
 backend/results/latest_exported_tree
 backend/results/latest_exported_tree.pdf
+
+datasets/*
+!datasets/iris.csv

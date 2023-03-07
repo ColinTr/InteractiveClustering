@@ -1,5 +1,4 @@
-import shutil
-from flask import Flask, jsonify, request, session, send_file, make_response
+from flask import Flask, jsonify, request, send_file
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from matplotlib.figure import Figure
@@ -13,13 +12,20 @@ import pandas as pd
 import numpy as np
 import datetime
 import graphviz
+import shutil
 import json
 import os
 
 app = Flask(__name__)
-app.secret_key = "My Secret key"
-app.config['SESSION_TYPE'] = 'filesystem'
+# app.secret_key = "My Secret key"
+# app.config['SESSION_TYPE'] = 'filesystem'
+# app.config.from_object(__name__)
+# Session(app)
 CORS(app)
+
+# Global dict for storing data in between requests
+# /!\ DO NOT USE IF THE SERVER IS DEPLOYED IN PRODUCTION /!\
+session = {}
 
 
 def corsify_response(response):
@@ -38,7 +44,7 @@ def getFileHeader():
     data = request.get_json()
     file_path = os.path.join('..', 'datasets', data['selected_file_path'])
     dataset = pd.read_csv(file_path)
-    session['loaded_dataset'] = dataset.to_json()
+    session['loaded_dataset'] = dataset  # dataset.to_json()
     columns_names = dataset.columns
 
     return corsify_response(jsonify({"file_header": columns_names.tolist()}))
@@ -46,10 +52,8 @@ def getFileHeader():
 
 @app.route('/getFeatureUniqueValues', methods=['POST'])
 def getFeatureUniqueValues():
-    dataset = session.get('loaded_dataset')
-
-    if dataset:
-        dataset = pd.DataFrame(eval(dataset))
+    if "loaded_dataset" in session.keys():
+        dataset = session.get('loaded_dataset')
         data = request.get_json()
         feature_name = data['feature_name']
         unique_values = dataset[feature_name].unique()
@@ -153,9 +157,8 @@ def findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_
 
 @app.route('/getDatasetTSNE', methods=['POST'])
 def getDatasetTSNE():
-    dataset = session.get('loaded_dataset')
-    if dataset:
-        dataset = pd.DataFrame(eval(dataset))
+    if "loaded_dataset" in session.keys():
+        dataset = session.get('loaded_dataset')
         data = request.get_json()
 
         dataset_name = data['dataset_name']
@@ -232,10 +235,8 @@ def getDatasetTSNE():
 
 @app.route('/runClustering', methods=['POST'])
 def runClustering():
-    dataset = session.get('loaded_dataset')
-
-    if dataset:
-        dataset = pd.DataFrame(eval(dataset))
+    if "loaded_dataset" in session.keys():
+        dataset = session.get('loaded_dataset')
         data = request.get_json()
 
         dataset_name = data['dataset_name']
@@ -352,10 +353,9 @@ def runClustering():
 
 @app.route('/runRulesGeneration', methods=['POST'])
 def runRulesGeneration():
-    dataset = session.get('loaded_dataset')
+    if "loaded_dataset" in session.keys():
+        dataset = session.get('loaded_dataset')
 
-    if dataset:
-        dataset = pd.DataFrame(eval(dataset))
         last_clustering_prediction = session.get('last_clustering_prediction')
         last_clustering_target_name = session.get('last_clustering_target_name')
         last_clustering_original_target = session.get('last_clustering_original_target')

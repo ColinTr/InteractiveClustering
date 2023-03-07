@@ -28,7 +28,7 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 3) Start the backend:
 ```bash
-python backend/server.py
+python server.py
 ```
 
 4) Install [Node.js](https://nodejs.org/en/) for the frontend website.
