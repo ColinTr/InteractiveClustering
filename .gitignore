@@ -21,13 +21,10 @@ frontend/node_modules
 
 backend/.idea
 backend/icvenv/*
-backend/results/images_folder/*
+backend/results/*
 !backend/results/images_folder/.gitkeep
-backend/results/tsne_arrays/*
 !backend/results/tsne_arrays/.gitkeep
-backend/results/results_dict.json
-backend/results/latest_exported_tree
-backend/results/latest_exported_tree.pdf
+!backend/results/tmp/.gitkeep
 
 datasets/*
 !datasets/iris.csv

@@ -4,7 +4,8 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import {Tooltip} from "@mui/material";
-import {AiOutlineQuestionCircle} from "react-icons/ai";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
 
 
 const TabularNCDParameters = (props) => {
@@ -14,7 +15,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="The number of unknown classes to predict">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Number of clusters <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            Number of clusters <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -33,7 +34,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Cosine Top k (in %) <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            Cosine Top k (in %) <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -53,7 +54,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            w1 <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            w1 <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -73,8 +74,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            w2 <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
-                        </div>
+                            w2 <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/></div>
                     </Tooltip>
                 </Col>
                 <Col className="col-4 d-flex flex-column">
@@ -93,7 +93,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Classif. lr <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            Classif. lr <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -113,7 +113,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Clust. lr <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            Clust. lr <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -133,7 +133,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            k neighbors <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            k neighbors <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -152,7 +152,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Dropout <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            Dropout <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -172,7 +172,7 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-7 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Activation function <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                            Activation function <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>

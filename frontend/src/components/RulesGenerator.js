@@ -3,9 +3,10 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import {AiOutlineQuestionCircle} from "react-icons/ai";
-import {Tooltip} from "@mui/material";
+import { Tooltip } from "@mui/material";
 import Form from 'react-bootstrap/Form';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
 
 class RulesGenerator extends React.Component {
 
@@ -22,7 +23,7 @@ class RulesGenerator extends React.Component {
                             <Form.Label htmlFor="multi_class_radio_button_1">
                                 <Tooltip title="Rules are formed by training a single decision tree for all the clusters">
                                     <div style={{display: "flex", alignItems: "center"}}>
-                                        Multi-Class <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                                        Multi-Class <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                                     </div>
                                 </Tooltip>
                             </Form.Label>
@@ -31,7 +32,7 @@ class RulesGenerator extends React.Component {
                             <Form.Label htmlFor="multi_class_radio_button_2">
                                 <Tooltip title="Rules are formed by training a decision tree for each cluster">
                                     <div style={{display: "flex", alignItems: "center"}}>
-                                        One-Vs-Rest <AiOutlineQuestionCircle  style={{marginLeft: "5px"}}/>
+                                        One-Vs-Rest <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                                     </div>
                                 </Tooltip>
                             </Form.Label>
@@ -42,7 +43,7 @@ class RulesGenerator extends React.Component {
                         <Col className="col-10 d-flex flex-column">
                             <Tooltip title="Generate rules for all the classes (known + unknown), or only for the unknown classes">
                                 <label className="form-check-label" htmlFor="switch_train_unknown_ony">
-                                    Unknown classes only <AiOutlineQuestionCircle style={{marginLeft: "5px"}}/>
+                                    Unknown classes only <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                                 </label>
                             </Tooltip>
                         </Col>
@@ -59,6 +60,7 @@ class RulesGenerator extends React.Component {
                         </Col>
                     </Row>
 
+                    {/*
                     <Row className="d-flex flex-row">
                         <Col className="col-8 d-flex flex-column">
                             <Tooltip title="The maximum depth of the tree. If empty, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.">
@@ -80,7 +82,7 @@ class RulesGenerator extends React.Component {
 
                     <Row className="d-flex flex-row">
                         <Col className="col-8 d-flex flex-column">
-                            <Tooltip title="The minimum number of samples required to split an internal node:">
+                            <Tooltip title="The minimum number of samples required to split an internal node.">
                                 <p style={{display: "flex", alignItems: "center"}}>
                                     Min samples split <AiOutlineQuestionCircle  style={{marginLeft: "5px"}}/>
                                 </p>
@@ -96,6 +98,27 @@ class RulesGenerator extends React.Component {
                             />
                         </Col>
                     </Row>
+                    */}
+
+                    <Row className="d-flex flex-row">
+                        <Col className="col-8 d-flex flex-column">
+                            <Tooltip title="Grow a tree with max_leaf_nodes in best-first fashion. Best nodes are defined as relative reduction in impurity. If None then unlimited number of leaf nodes.">
+                                <p style={{display: "flex", alignItems: "center"}}>
+                                    Max leaf nodes <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                                </p>
+                            </Tooltip>
+                        </Col>
+                        <Col className="col-4 d-flex flex-column">
+                            <input type="number"
+                                   min={0}
+                                   placeholder="Max depth"
+                                   step={1}
+                                   defaultValue={this.props.decision_tree_decision_tree_max_leaf_nodes}
+                                   onChange={this.props.on_decision_tree_decision_tree_max_leaf_nodes_change}
+                            />
+                        </Col>
+                    </Row>
+
                     <Row className="d-flex flex-row">
                         <Col className="col-6 d-flex flex-column">
                             <Button style={{width:'120px'}} onClick={() => this.props.onRulesRunButtonClick()}>

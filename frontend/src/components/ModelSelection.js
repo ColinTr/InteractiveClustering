@@ -7,6 +7,7 @@ import Row from "react-bootstrap/Row";
 import KMeansParameters from "./models_parameters/KMeansParameters";
 import TabularNCDParameters from "./models_parameters/TabularNCDParameters";
 import '../App.css';
+import SpectralClusteringParameters from "./models_parameters/SpectralClusteringParameters";
 
 class ModelSelection extends React.Component {
 
@@ -23,6 +24,10 @@ class ModelSelection extends React.Component {
         this.setState({ parameters_to_display: this.get_kmeans_state_parameters() })
     }
 
+    set_display_to_spectral_clustering = () => {
+        this.setState({ parameters_to_display: this.get_spectral_clustering_state_parameters() })
+    }
+
     set_display_to_tabularncd = () => {
         this.setState({ parameters_to_display: this.get_tabularncd_state_parameters() })
     }
@@ -31,7 +36,18 @@ class ModelSelection extends React.Component {
         return (
             <KMeansParameters
                 on_kmeans_n_clusters_change={this.props.on_kmeans_n_clusters_change}
-                n_clusters_value={this.props.k_means_n_clusters}
+                k_means_n_clusters={this.props.k_means_n_clusters}
+            />
+        )
+    }
+
+    get_spectral_clustering_state_parameters = () => {
+        return (
+            <SpectralClusteringParameters
+                on_spectral_clustering_n_clusters_change={this.props.on_spectral_clustering_n_clusters_change}
+                spectral_clustering_n_clusters={this.props.spectral_clustering_n_clusters}
+                on_spectral_clustering_affinity_change={this.props.on_spectral_clustering_affinity_change}
+                spectral_clustering_affinity={this.props.spectral_clustering_affinity}
             />
         )
     }
@@ -70,6 +86,9 @@ class ModelSelection extends React.Component {
         if (event.target.value === "tabularncd") {
             this.set_display_to_tabularncd()
         }
+        if (event.target.value === "spectral_clustering") {
+            this.set_display_to_spectral_clustering()
+        }
         if (event.target.value === "...") {
             this.setState({parameters_to_display : <p>Unimplemented model</p>})
         }
@@ -93,6 +112,7 @@ class ModelSelection extends React.Component {
                             <Form.Select aria-label="Default select example" onChange={this.onDropDownChange} className="my-row">
                                 <option value="tabularncd">TabularNCD</option>
                                 <option value="k_means">k-means</option>
+                                <option value="spectral_clustering">Spectral clustering</option>
                                 <option value="...">...</option>
                             </Form.Select>
                         </Col>

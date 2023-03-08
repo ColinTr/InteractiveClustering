@@ -27,22 +27,21 @@ class FeatureSelection extends React.Component {
                         <Row className="d-flex flex-row" key={"row_" + feature.name}>
                             <Col className="d-flex flex-column col-1">
                                 <div className="form-check">
-                                    <input className="form-check-input"
-                                           type="radio"
+                                    <input type="radio"
+                                           className="form-check-input"
                                            onChange={() => this.props.onFeatureRadioButtonChange(feature.name)}
                                            name="classFeatureRadio"
                                            key={"class_radio_" + feature.name}
                                     />
                                 </div>
                             </Col>
-                            <Col className="d-flex flex-column">
-                                <Form.Check
-                                    type="checkbox"
-                                    label={feature.name}
-                                    onChange={() => this.props.onChangeCheckbox(feature.index)}
-                                    checked={feature.checked}
-                                    key={"checkbox_" + feature.name}
-                                    disabled={feature.disabled}
+                            <Col className="d-flex flex-column col-10">
+                                <Form.Check type="checkbox"
+                                            onChange={() => this.props.onChangeCheckbox(feature.index)}
+                                            checked={feature.checked}
+                                            key={"checkbox_" + feature.name}
+                                            disabled={feature.disabled}
+                                            label={feature.name}
                                 />
                             </Col>
                         </Row>

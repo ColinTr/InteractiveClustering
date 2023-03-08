@@ -18,6 +18,10 @@ class FullPage extends React.Component {
         // Default k means parameters :
         default_kmeans_n_clusters : 10,
 
+        // Default spectral clustering parameters :
+        default_spectral_clustering_n_clusters : 10,
+        default_spectral_clustering_affinity : 'rbf',
+
         // Default TabularNCD parameters :
         default_tabncd_n_clusters : 10,
         default_tabncd_cosine_topk : 10,
@@ -54,6 +58,7 @@ class FullPage extends React.Component {
             decision_tree_unknown_classes_only: false,
             decision_tree_max_depth: null,
             decision_tree_min_samples_split: 2,
+            decision_tree_max_leaf_nodes: 10,
             rules_modal_is_open: false,
             decision_tree_response_text_rules: "",
             decision_tree_response_pdf_file: null,
@@ -63,6 +68,10 @@ class FullPage extends React.Component {
 
             // k means parameters :
             model_params_k_means_n_clusters: this.default_model_params.default_kmeans_n_clusters,
+
+            // spectral clustering parameters :
+            model_params_spectral_clustering_n_clusters: this.default_model_params.default_spectral_clustering_n_clusters,
+            model_params_spectral_clustering_affinity: this.default_model_params.default_spectral_clustering_affinity,
 
             // TabularNCD parameters :
             model_params_tabncd_n_clusters : this.default_model_params.default_tabncd_n_clusters,
@@ -86,18 +95,14 @@ class FullPage extends React.Component {
     }
 
     onChangeFeaturesSearch = query => {
-        if (query.target.value !== '') {
-            this.setState({ feature_search_query: query.target.value });
-        }
+        this.setState({ feature_search_query: query.target.value })
 
         const updated_filtered_list = this.getUpdatedFilteredList(this.state.formatted_features, query.target.value)
         this.setState({ search_filtered_features_list: updated_filtered_list })
     };
 
     onChangeUniqueValuesSearch = query => {
-        if (query.target.value !== '') {
-            this.setState({ unique_values_search_query: query.target.value });
-        }
+        this.setState({ unique_values_search_query: query.target.value })
 
         const updated_filtered_list = this.getUpdatedFilteredList(this.state.class_values_to_display, query.target.value)
         this.setState({ search_filtered_unique_values_list: updated_filtered_list })
@@ -351,6 +356,7 @@ class FullPage extends React.Component {
                     'decision_tree_unknown_classes_only': this.state.decision_tree_unknown_classes_only,
                     'decision_tree_max_depth': this.state.decision_tree_max_depth,
                     'decision_tree_min_samples_split': this.state.decision_tree_min_samples_split,
+                    'decision_tree_max_leaf_nodes': this.state.decision_tree_max_leaf_nodes,
                     'random_state': 0,
                 }
             })
@@ -416,6 +422,10 @@ class FullPage extends React.Component {
         this.setState({decision_tree_min_samples_split: event.target.value})
     }
 
+    on_decision_tree_decision_tree_max_leaf_nodes_change = (event) => {
+        this.setState({decision_tree_max_leaf_nodes: event.target.value})
+    }
+
     onShowUnknownOnlySwitchChange = () => {
         const new_show_unknown_only_value = !this.state.show_unknown_only
         this.setState({show_unknown_only: new_show_unknown_only_value})
@@ -451,11 +461,10 @@ class FullPage extends React.Component {
             fireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
             return
         }
-        if(this.state.model_params_selected_model === "k_means" && this.getUnknownClassesFormattedList().length === 0){
-            fireSwalError("Cannot train k-means", "There are no unknown classes selected")
+        if(this.getUnknownClassesFormattedList().length === 0){
+            fireSwalError("Cannot run clustering", "There are no unknown classes selected")
             return
         }
-
         if(this.state.model_params_selected_model === "tabularncd"){
             fireSwalError("Not implemented yet!")
             return
@@ -468,6 +477,15 @@ class FullPage extends React.Component {
                 'model_name': this.state.model_params_selected_model,
 
                 'k_means_n_clusters': parseInt(this.state.model_params_k_means_n_clusters),
+            }
+        }
+
+        if(this.state.model_params_selected_model === "spectral_clustering"){
+            model_config = {
+                'model_name': this.state.model_params_selected_model,
+
+                'spectral_clustering_n_clusters': parseInt(this.state.model_params_spectral_clustering_n_clusters),
+                'spectral_clustering_affinity': this.state.model_params_spectral_clustering_affinity,
             }
         }
 
@@ -580,6 +598,14 @@ class FullPage extends React.Component {
         this.setState({model_params_tabncd_activation_fct: event.target.value})
     }
 
+    on_spectral_clustering_n_clusters_change = (event) => {
+        this.setState({model_params_spectral_clustering_n_clusters: event.target.value})
+    }
+
+    on_spectral_clustering_affinity_change = (event) => {
+        this.setState({model_params_spectral_clustering_affinity: event.target.value})
+    }
+
     onRulesUnknownClassesOnlySwitchChange = () => {
         this.setState({decision_tree_unknown_classes_only: !this.state.decision_tree_unknown_classes_only})
     }
@@ -597,9 +623,22 @@ class FullPage extends React.Component {
         this.setState({rules_modal_is_open: false})
     }
 
+    onSaveImageButtonClick = () => {
+        if(this.state.image_to_display !== null) {
+            const link = document.createElement('a')
+            link.href = this.state.image_to_display
+            link.setAttribute('download', this.state.dataset_name + '.png')
+            document.body.appendChild(link)
+            link.click()
+            link.parentNode.removeChild(link)  // Clean up and remove the link
+        } else {
+            fireSwalError("No image to save.")
+        }
+    }
+
     render() {
         return (
-            <Row style={{height: '100vh', width:"90vw"}} className="d-flex flex-row justify-content-center align-items-center">
+            <Row style={{height: '100vh', width:"99vw"}} className="d-flex flex-row justify-content-center align-items-center">
 
                 <RulesDisplayModal rules_modal_is_open={this.state.rules_modal_is_open}
                                    openRulesModal={this.openRulesModal}
@@ -610,7 +649,7 @@ class FullPage extends React.Component {
                                    decision_tree_response_pdf_file={this.state.decision_tree_response_pdf_file}
                 />
 
-                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>
+                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "99vh"}}>
                     <Row className="my_row py-2">
                         <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
                                          setDatasetNameHandler={this.setDatasetNameHandler}
@@ -640,7 +679,7 @@ class FullPage extends React.Component {
                     </Row>
                 </Col>
 
-                <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "95vh"}}>
+                <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "99vh"}}>
                     <Row className="my_row mx-lg-1 py-2 d-flex flex-row" style={{flexGrow:'1', height:"100%"}}>
                         <DataVisualization image_to_display={this.state.image_to_display}
                                            onRawDataButtonClick={this.onRawDataButtonClick}
@@ -648,11 +687,13 @@ class FullPage extends React.Component {
 
                                            onShowUnknownOnlySwitchChange={this.onShowUnknownOnlySwitchChange}
                                            show_unknown_only={this.state.show_unknown_only}
+
+                                           onSaveImageButtonClick={this.onSaveImageButtonClick}
                         />
                     </Row>
                 </Col>
 
-                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "95vh"}}>
+                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "99vh"}}>
                     <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
                         <ModelSelection onRunModelButtonClick={this.onRunModelButtonClick}
                                         onAutoParamsButtonClick={this.onAutoParamsButtonClick}
@@ -680,7 +721,12 @@ class FullPage extends React.Component {
 
                                         on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
                                         k_means_n_clusters={this.state.model_params_k_means_n_clusters}
-                                        onKMeansTrainOnUknownClassesOnlySwitchChange={this.onKMeansTrainOnUknownClassesOnlySwitchChange}
+                                        onKMeansTrainOnUnknownClassesOnlySwitchChange={this.onKMeansTrainOnUnknownClassesOnlySwitchChange}
+
+                                        on_spectral_clustering_n_clusters_change={this.on_spectral_clustering_n_clusters_change}
+                                        spectral_clustering_n_clusters={this.state.model_params_spectral_clustering_n_clusters}
+                                        on_spectral_clustering_affinity_change={this.on_spectral_clustering_affinity_change}
+                                        spectral_clustering_affinity={this.state.model_params_spectral_clustering_affinity}
                         />
                     </Row>
                     <Row className="my_row py-2 d-flex flex-row">
@@ -694,6 +740,9 @@ class FullPage extends React.Component {
 
                                         on_decision_tree_min_samples_split_change={this.on_decision_tree_min_samples_split_change}
                                         decision_tree_min_samples_split={this.state.decision_tree_min_samples_split}
+
+                                        on_decision_tree_decision_tree_max_leaf_nodes_change={this.on_decision_tree_decision_tree_max_leaf_nodes_change}
+                                        decision_tree_decision_tree_max_leaf_nodes={this.state.decision_tree_max_leaf_nodes}
 
                                         onRulesRunButtonClick={this.onRulesRunButtonClick}
                                         onShowRulesButtonClick={this.onShowRulesButtonClick}
