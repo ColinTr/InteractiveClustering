@@ -4,43 +4,17 @@ import Col from "react-bootstrap/Col";
 import ModelSelection from "./ModelSelection";
 import AgglomerativeClustering from "./AgglomerativeClustering";
 import DataVisualization from "./DataVisualization";
+import ProgressBar from 'react-bootstrap/ProgressBar';
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import fireSwalError from "./swal_functions";
 import RulesGenerator from "./RulesGenerator";
 import RulesDisplayModal from "./RulesDisplayModal";
 import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 
 
 class FullPage extends React.Component {
-
-    default_model_params = {
-        // Default TabularNCD parameters
-        default_tabncd_n_clusters : 10,
-        default_tabncd_cosine_topk : 10,
-        default_tabncd_w1 : 0.8,
-        default_tabncd_w2 : 0.8,
-        default_tabncd_classifier_lr : 0.001,
-        default_tabncd_cluster_lr : 0.001,
-        default_tabncd_k_neighbors : 5,
-        default_tabncd_dropout : 0.2,
-        default_tabncd_activation_fct : "sigmoid",
-
-        // Default k means parameters
-        default_kmeans_n_clusters : 10,
-
-        // Default spectral clustering parameters
-        default_spectral_clustering_n_clusters : 10,
-        default_spectral_clustering_affinity : 'rbf',
-
-        // Default projection in classifier parameters
-        default_projection_in_classifier_n_clusters : 10,
-        default_projection_in_classifier_input_size : null,
-        default_projection_in_classifier_hidden_layers : [],
-        default_projection_in_classifier_output_size : null,
-        default_projection_in_classifier_dropout : 0.2,
-        default_projection_in_classifier_activation_fct : "sigmoid",
-    }
 
     constructor(props) {
         super(props);
@@ -61,7 +35,7 @@ class FullPage extends React.Component {
             image_to_display: null,
             show_unknown_only: false,
 
-            // Rules generation parameters
+            // Default rules generation parameters
             decision_tree_training_mode: "multi_class",
             decision_tree_unknown_classes_only: false,
             decision_tree_max_depth: null,
@@ -74,31 +48,33 @@ class FullPage extends React.Component {
 
             model_params_selected_model : "tabularncd",
 
-            // TabularNCD parameters
-            model_params_tabncd_n_clusters : this.default_model_params.default_tabncd_n_clusters,
-            model_params_tabncd_cosine_topk : this.default_model_params.default_tabncd_cosine_topk,
-            model_params_tabncd_w1 : this.default_model_params.default_tabncd_w1,
-            model_params_tabncd_w2 : this.default_model_params.default_tabncd_w2,
-            model_params_tabncd_classifier_lr : this.default_model_params.default_tabncd_classifier_lr,
-            model_params_tabncd_cluster_lr : this.default_model_params.default_tabncd_cluster_lr,
-            model_params_tabncd_k_neighbors : this.default_model_params.default_tabncd_k_neighbors,
-            model_params_tabncd_dropout : this.default_model_params.default_tabncd_dropout,
-            model_params_tabncd_activation_fct : this.default_model_params.default_tabncd_activation_fct,
+            // Default TabularNCD parameters
+            model_params_tabncd_n_clusters : 10,
+            model_params_tabncd_cosine_topk : 10,
+            model_params_tabncd_w1 : 0.8,
+            model_params_tabncd_w2 : 0.8,
+            model_params_tabncd_classifier_lr : 0.001,
+            model_params_tabncd_cluster_lr : 0.001,
+            model_params_tabncd_k_neighbors : 5,
+            model_params_tabncd_dropout : 0.2,
+            model_params_tabncd_activation_fct : "sigmoid",
 
-            // k means parameters
-            model_params_k_means_n_clusters: this.default_model_params.default_kmeans_n_clusters,
+            // Default k means parameters
+            model_params_k_means_n_clusters: 10,
 
-            // spectral clustering parameters
-            model_params_spectral_clustering_n_clusters: this.default_model_params.default_spectral_clustering_n_clusters,
-            model_params_spectral_clustering_affinity: this.default_model_params.default_spectral_clustering_affinity,
+            // Default spectral clustering parameters
+            model_params_spectral_clustering_n_clusters: 10,
+            model_params_spectral_clustering_affinity: 'rbf',
 
-            // Projection in classifier parameters
-            model_projection_in_classifier_n_clusters: this.default_model_params.default_projection_in_classifier_n_clusters,
-            model_projection_in_classifier_input_size: this.default_model_params.default_projection_in_classifier_input_size,
-            model_projection_in_classifier_hidden_layers: this.default_model_params.default_projection_in_classifier_hidden_layers,
-            model_projection_in_classifier_output_size: this.default_model_params.default_projection_in_classifier_output_size,
-            model_projection_in_classifier_dropout: this.default_model_params.default_projection_in_classifier_dropout,
-            model_projection_in_classifier_activation_fct: this.default_model_params.default_projection_in_classifier_activation_fct,
+            // Default projection in classifier parameters
+            model_projection_in_classifier_n_clusters: 10,
+            model_projection_in_classifier_input_size: null,
+            model_projection_in_classifier_hidden_layers: [],
+            model_projection_in_classifier_output_size: null,
+            model_projection_in_classifier_dropout: 0.2,
+            model_projection_in_classifier_lr_value : 0.001,
+            model_projection_in_classifier_activation_fct: "sigmoid",
+            model_projection_in_classifier_training_progress: 0,
         };
 
         this.state = this.initial_state;
@@ -146,7 +122,7 @@ class FullPage extends React.Component {
 
         let count = 0
         list_of_values.map(feature => {
-            // If the feature is 'disabled' it means that it is the class attribute and we shouldn't count it
+            // If the feature is 'disabled' it means that it is the class attribute, and we shouldn't count it
             if(Object.hasOwn(feature, 'disabled') === true){
                 if(feature.disabled === false){
                     if (feature.checked === true) {
@@ -490,6 +466,9 @@ class FullPage extends React.Component {
         this.setState({model_projection_in_classifier_activation_fct: event.target.value})
     }
 
+    on_projection_in_classifier_lr_change = (event) => {
+        this.setState({model_projection_in_classifier_lr_value: event.target.value})
+    }
 
     onShowUnknownOnlySwitchChange = () => {
         const new_show_unknown_only_value = !this.state.show_unknown_only
@@ -571,13 +550,14 @@ class FullPage extends React.Component {
             model_config = {
                 'model_name': this.state.model_params_selected_model,
 
-                'model_projection_in_classifier_n_clusters' : parseInt(this.state.model_projection_in_classifier_n_clusters),
-                'model_projection_in_classifier_architecture' : Array.prototype.concat(
+                'projection_in_classifier_n_clusters' : parseInt(this.state.model_projection_in_classifier_n_clusters),
+                'projection_in_classifier_architecture' : Array.prototype.concat(
                     this.state.model_projection_in_classifier_input_size,
                     this.state.model_projection_in_classifier_hidden_layers,
                     this.state.model_projection_in_classifier_output_size),
-                'model_projection_in_classifier_dropout' : parseFloat(this.state.model_projection_in_classifier_dropout),
-                'model_projection_in_classifier_activation_fct' : this.state.model_projection_in_classifier_activation_fct,
+                'projection_in_classifier_dropout' : parseFloat(this.state.model_projection_in_classifier_dropout),
+                'projection_in_classifier_lr' : parseFloat(this.state.model_projection_in_classifier_lr_value),
+                'projection_in_classifier_activation_fct' : this.state.model_projection_in_classifier_activation_fct,
             }
         }
         else {
@@ -621,10 +601,87 @@ class FullPage extends React.Component {
                     })
                 }
                 if (serverPromise.status === 200) {
-                    serverPromise.blob().then(image_response_blob => {
-                        const imageObjectURL = URL.createObjectURL(image_response_blob);
-                        this.setState({image_to_display: imageObjectURL})
-                    })
+                    // This model takes time to train, so we only get the background thread ID to update a progress bar
+                    if(this.state.model_params_selected_model === "projection_in_classifier"){
+                        serverPromise.json().then((server_response => {
+                            const thread_id = server_response["thread_id"]
+
+                            withReactContent(Swal).mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                showCancelButton: true,
+                                allowOutsideClick: false,
+                                html: <div className="progress"><div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100" id={"pb_thread_"+thread_id}></div></div>,
+                            }).fire({
+                                title: 'Training model...'
+                            }).then((result) => {
+                                if(result.isDismissed){
+                                    const cancelThreadRequestOptions = {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({'thread_id': thread_id})
+                                    }
+                                    fetch('/cancelTrainingThread', cancelThreadRequestOptions).then(cancelServerPromise => {
+                                        if (cancelServerPromise.status === 500) {
+                                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                                        }
+                                        if (cancelServerPromise.status === 422) {
+                                            cancelServerPromise.json().then(error => {
+                                                fireSwalError('Status 422 - Server error', error['error_message'])
+                                            })
+                                        }
+                                        if (cancelServerPromise.status === 200) {
+                                            Swal.mixin({
+                                                toast: true,
+                                                position: 'top-end',
+                                                showConfirmButton: false,
+                                                timer: 3000,
+                                                timerProgressBar: true,
+                                                didOpen: (toast) => {
+                                                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                                                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                                                }
+                                            }).fire({
+                                                icon: 'success',
+                                                title: 'Training stopped'
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+
+                            const checkProgressRequestOptions = {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({'thread_id': thread_id})
+                            }
+                            setInterval(() => fetch('/getThreadProgress', checkProgressRequestOptions)
+                                .then(progressServerPromise => {
+                                    if (progressServerPromise.status === 500) {
+                                        fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                                    }
+                                    if (progressServerPromise.status === 422) {
+                                        progressServerPromise.json().then(error => {
+                                            fireSwalError('Status 422 - Server error', error['error_message'])
+                                        })
+                                    }
+                                    if (progressServerPromise.status === 200) {
+                                        progressServerPromise.json().then(json_response => {
+                                            this.setState({model_projection_in_classifier_training_progress: json_response["thread_progress"]})
+                                            document.getElementById("pb_thread_"+thread_id).setAttribute('aria-valuenow', Number(json_response["thread_progress"]));
+                                            document.getElementById("pb_thread_"+thread_id).setAttribute('style','width:'+ Number(json_response["thread_progress"])+'%');
+                                        })
+                                    }
+                                }),1000)
+                        }))
+                    // Other clustering models are fast, so we just wait for the result
+                    } else {
+                        serverPromise.blob().then(image_response_blob => {
+                            const imageObjectURL = URL.createObjectURL(image_response_blob);
+                            this.setState({image_to_display: imageObjectURL})
+                        })
+                    }
                 }
             })
     }
@@ -716,10 +773,28 @@ class FullPage extends React.Component {
         }
     }
 
+    onProjectionInClassifierAddLayerButtonClick = () => {
+        const layer_size = document.getElementById('projectionInClassifierLayerSizeInput').value
+
+        if(layer_size === null || layer_size === '' || layer_size <= 0){
+            fireSwalError("Please enter a valid value")
+            return
+        }
+
+        let model_projection_in_classifier_hidden_layers_copy = [...this.state.model_projection_in_classifier_hidden_layers]
+        model_projection_in_classifier_hidden_layers_copy.push(parseInt(layer_size))
+        this.setState({model_projection_in_classifier_hidden_layers: model_projection_in_classifier_hidden_layers_copy})
+    }
+
+    onProjectionInClassifierRemoveLayerButtonClick = (layer_index) => {
+        let model_projection_in_classifier_hidden_layers_copy = [...this.state.model_projection_in_classifier_hidden_layers]
+        model_projection_in_classifier_hidden_layers_copy.splice(layer_index, 1)
+        this.setState({model_projection_in_classifier_hidden_layers: model_projection_in_classifier_hidden_layers_copy})
+    }
+
     render() {
         return (
             <Row style={{height: '100vh', width:"99vw"}} className="d-flex flex-row justify-content-center align-items-center">
-
                 <RulesDisplayModal rules_modal_is_open={this.state.rules_modal_is_open}
                                    openRulesModal={this.openRulesModal}
                                    closeRulesModal={this.closeRulesModal}
@@ -816,6 +891,10 @@ class FullPage extends React.Component {
                                         on_projection_in_classifier_dropout_change = {this.on_projection_in_classifier_dropout_change}
                                         projection_in_classifier_dropout = {this.state.model_projection_in_classifier_dropout}
                                         on_projection_in_classifier_activation_fct_change = {this.on_projection_in_classifier_activation_fct_change}
+                                        on_projection_in_classifier_lr_change = {this.on_projection_in_classifier_lr_change}
+                                        projection_in_classifier_lr_value = {this.state.model_projection_in_classifier_lr_value}
+                                        onProjectionInClassifierAddLayerButtonClick = {this.onProjectionInClassifierAddLayerButtonClick}
+                                        onProjectionInClassifierRemoveLayerButtonClick = {this.onProjectionInClassifierRemoveLayerButtonClick}
                         />
                     </Row>
                     <Row className="my_row py-2 d-flex flex-row">

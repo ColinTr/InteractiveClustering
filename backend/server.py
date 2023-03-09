@@ -1,8 +1,15 @@
+"""
+Orange Labs
+Authors : Colin Troisemaine
+Maintainer : colin.troisemaine@gmail.com
+"""
+
+from ProjectionInClassifier import ProjectionInClassifier, NewThreadedTrainingTask
+from sklearn.cluster import KMeans, SpectralClustering
 from flask import Flask, jsonify, request, send_file
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from matplotlib.figure import Figure
-from sklearn.cluster import KMeans, SpectralClustering
 from sklearn.manifold import TSNE
 from PyPDF2 import PdfMerger
 from flask_cors import CORS
@@ -12,11 +19,13 @@ import pandas as pd
 import numpy as np
 import datetime
 import graphviz
+import logging
 import shutil
 import json
 import os
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.DEBUG)
 # app.secret_key = "My Secret key"
 # app.config['SESSION_TYPE'] = 'filesystem'
 # app.config.from_object(__name__)
@@ -26,6 +35,7 @@ CORS(app)
 # Global dict for storing data in between requests
 # /!\ DO NOT USE IF THE SERVER IS DEPLOYED IN PRODUCTION /!\
 session = {}
+running_threads = {}
 
 
 def corsify_response(response):
@@ -260,11 +270,6 @@ def runClustering():
 
     filtered_dataset = np.array(dataset[selected_features])
 
-    if show_unknown_only is True:
-        unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
-    else:
-        unknown_mask = np.repeat(True, len(dataset))
-
     results_dict = loadResultsDict()
 
     # Try to find the configuration in the results_dict
@@ -327,6 +332,38 @@ def runClustering():
         full_target_to_plot = None
 
         # ToDo implement the TabularNCD clustering model
+
+        return jsonify({"error_message": "Model not implemented in the server"}), 422
+
+    elif model_name == 'projection_in_classifier':
+
+        model = ProjectionInClassifier(app,
+                                       model_config['projection_in_classifier_architecture'],
+                                       model_config['projection_in_classifier_n_clusters'],
+                                       model_config['projection_in_classifier_dropout'],
+                                       model_config['projection_in_classifier_activation_fct'],
+                                       model_config['projection_in_classifier_lr'])
+
+        batch_size = 256
+        num_epochs = 30
+
+        known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
+        x_train = filtered_dataset[known_mask]
+        y_train = np.array(dataset[target_name])[known_mask]
+
+        # The training targets must be in {0, ..., |C|}
+        mapper, ind = np.unique(y_train, return_inverse=True)
+        mapping_dict = dict(zip(y_train, ind))
+        y_train_mapped = np.array(list(map(mapping_dict.get, y_train)))
+        # y_test_known_mapped = np.array(list(map(mapping_dict.get, y_test_known)))
+
+        # Start training in a new thread to avoid blocking the server while training the model
+        global running_threads
+        new_thread = NewThreadedTrainingTask(model, x_train, y_train_mapped, batch_size, num_epochs)
+        new_thread.start()
+        running_threads[new_thread.ident] = new_thread
+
+        return jsonify({"thread_id": new_thread.ident}), 200
     else:
         return jsonify({"error_message": "Clustering method " + model_name + " not implemented yet"}), 422
 
@@ -515,6 +552,25 @@ def clearServerCache():
 
     return "success", 200
 
+
+@app.route('/getThreadProgress', methods=["POST"])
+def getThreadProgress():
+    data = request.get_json()
+    if data["thread_id"] in running_threads.keys():
+        return jsonify({"thread_progress": running_threads[data["thread_id"]].progress_percentage}), 200
+    else:
+        return jsonify({"error_message": "thread not running"}), 422
+
+
+@app.route('/cancelTrainingThread', methods=["POST"])
+def cancelTrainingThread():
+    data = request.get_json()
+    if data["thread_id"] in running_threads.keys():
+        running_threads[data["thread_id"]].stop()
+        del running_threads[data["thread_id"]]
+        return "success", 200
+    else:
+        return jsonify({"error_message": "thread not running"}), 422
 
 @app.errorhandler(500)
 def internal_error(error):

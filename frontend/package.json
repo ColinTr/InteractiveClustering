@@ -21,7 +21,8 @@
     "react-bootstrap-range-slider": "^3.0.8",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",
-    "sweetalert2": "^11.7.3"
+    "sweetalert2": "^11.7.3",
+    "sweetalert2-react-content": "^5.0.7"
   },
   "scripts": {
     "start": "react-scripts start",

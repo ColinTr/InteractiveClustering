@@ -80,7 +80,7 @@ class ModelSelection extends React.Component {
                                 on_tabncd_activation_fct_change={this.props.on_tabncd_activation_fct_change}
                             />
                         }
-                        {this.state.selected_model === "kmeans" &&
+                        {this.state.selected_model === "k_means" &&
                             <KMeansParameters
                                 on_kmeans_n_clusters_change={this.props.on_kmeans_n_clusters_change}
                                 k_means_n_clusters={this.props.k_means_n_clusters}
@@ -98,14 +98,19 @@ class ModelSelection extends React.Component {
                         {this.state.selected_model === "projection_in_classifier" &&
                             <ProjectionInClassifierParameters
                                 on_projection_in_classifier_n_clusters_change = {this.props.on_projection_in_classifier_n_clusters_change}
-                                projection_in_classifier_n_clusters = {this.props.model_projection_in_classifier_n_clusters}
+                                projection_in_classifier_n_clusters = {this.props.projection_in_classifier_n_clusters}
                                 projection_in_classifier_input_size = {this.props.projection_in_classifier_input_size}
                                 projection_in_classifier_hidden_layers = {this.props.projection_in_classifier_hidden_layers}
                                 on_projection_in_classifier_hidden_layers_change = {this.props.on_projection_in_classifier_hidden_layers_change}
                                 projection_in_classifier_output_size = {this.props.projection_in_classifier_output_size}
                                 on_projection_in_classifier_dropout_change = {this.props.on_projection_in_classifier_dropout_change}
-                                projection_in_classifier_dropout = {this.props.model_projection_in_classifier_dropout}
+                                projection_in_classifier_dropout = {this.props.projection_in_classifier_dropout}
                                 on_projection_in_classifier_activation_fct_change = {this.props.on_projection_in_classifier_activation_fct_change}
+                                on_projection_in_classifier_lr_change = {this.props.on_projection_in_classifier_lr_change}
+                                projection_in_classifier_lr_value = {this.props.projection_in_classifier_lr_value}
+
+                                onProjectionInClassifierAddLayerButtonClick = {this.props.onProjectionInClassifierAddLayerButtonClick}
+                                onProjectionInClassifierRemoveLayerButtonClick = {this.props.onProjectionInClassifierRemoveLayerButtonClick}
                             />
                         }
                     </Row>
