@@ -50,7 +50,7 @@ const DownloadSnackbar = forwardRef((props, ref) => {
     function onDoneButtonClick() {
         // ToDo show the result of the training here...
 
-        closeSnackbar(props.id)
+        // closeSnackbar(props.id)
     }
 
     return (
@@ -71,13 +71,13 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                     </Row>
                     <Row>
                         <Col className="col-6 d-flex flex-column align-items-start">
-                            <button type="button" className="btn btn-secondary" onClick={onCancelTrainingButtonClick}>
+                            <button type="button" className="btn btn-danger" onClick={onCancelTrainingButtonClick}>
                                 Cancel
                             </button>
                         </Col>
                         <Col className="col-6 d-flex flex-column align-items-end">
-                            <button type="button" className="btn btn-secondary" onClick={onDoneButtonClick}>
-                                Done
+                            <button type="button" className="btn btn-success" onClick={onDoneButtonClick}>
+                                See results
                             </button>
                         </Col>
                     </Row>

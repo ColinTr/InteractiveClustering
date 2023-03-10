@@ -632,6 +632,7 @@ class FullPage extends React.Component {
                                     if (progressServerPromise.status === 200) {
                                         progressServerPromise.json().then(json_response => {
                                             const progress_value = json_response["thread_progress"]
+                                            this.setState({model_projection_in_classifier_training_progress: progress_value})
                                             document.getElementById("pb_thread_" + thread_id).setAttribute('aria-valuenow', progress_value)
                                             document.getElementById("pb_thread_" + thread_id).setAttribute('style','width:'+ Number(progress_value)+'%')
 
@@ -650,7 +651,7 @@ class FullPage extends React.Component {
                                 content: (key, message) => <DownloadSnackbar id={key}
                                                                              message={message}
                                                                              thread_id={thread_id}
-                                                                             refreshIntervalId={refreshIntervalId}/>,
+                                                                             refreshIntervalId={refreshIntervalId} />,
                             })
                         }))
                     // Other clustering models are fast, so we just wait for the result
