@@ -4,15 +4,14 @@ import Col from "react-bootstrap/Col";
 import ModelSelection from "./ModelSelection";
 import AgglomerativeClustering from "./AgglomerativeClustering";
 import DataVisualization from "./DataVisualization";
-import ProgressBar from 'react-bootstrap/ProgressBar';
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import fireSwalError from "./swal_functions";
 import RulesGenerator from "./RulesGenerator";
 import RulesDisplayModal from "./RulesDisplayModal";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-
+import {enqueueSnackbar} from 'notistack'
+import DownloadSnackbar from "./DownloadSnackbar";
 
 class FullPage extends React.Component {
 
@@ -513,6 +512,12 @@ class FullPage extends React.Component {
             fireSwalError("Not implemented yet!")
             return
         }
+        if(this.state.model_params_selected_model === "projection_in_classifier"){
+            if(this.state.model_projection_in_classifier_hidden_layers.length === 0){
+                fireSwalError("Please add at least one hidden layer")
+                return
+            }
+        }
 
         let model_config = null
 
@@ -606,74 +611,47 @@ class FullPage extends React.Component {
                         serverPromise.json().then((server_response => {
                             const thread_id = server_response["thread_id"]
 
-                            withReactContent(Swal).mixin({
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                showCancelButton: true,
-                                allowOutsideClick: false,
-                                html: <div className="progress"><div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100" id={"pb_thread_"+thread_id}></div></div>,
-                            }).fire({
-                                title: 'Training model...'
-                            }).then((result) => {
-                                if(result.isDismissed){
-                                    const cancelThreadRequestOptions = {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({'thread_id': thread_id})
-                                    }
-                                    fetch('/cancelTrainingThread', cancelThreadRequestOptions).then(cancelServerPromise => {
-                                        if (cancelServerPromise.status === 500) {
-                                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
-                                        }
-                                        if (cancelServerPromise.status === 422) {
-                                            cancelServerPromise.json().then(error => {
-                                                fireSwalError('Status 422 - Server error', error['error_message'])
-                                            })
-                                        }
-                                        if (cancelServerPromise.status === 200) {
-                                            Swal.mixin({
-                                                toast: true,
-                                                position: 'top-end',
-                                                showConfirmButton: false,
-                                                timer: 3000,
-                                                timerProgressBar: true,
-                                                didOpen: (toast) => {
-                                                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                                                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                                                }
-                                            }).fire({
-                                                icon: 'success',
-                                                title: 'Training stopped'
-                                            })
-                                        }
-                                    })
-                                }
-                            })
-
+                            // Periodically request the backend for the training progress
                             const checkProgressRequestOptions = {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({'thread_id': thread_id})
                             }
-                            setInterval(() => fetch('/getThreadProgress', checkProgressRequestOptions)
+                            const refreshIntervalId = setInterval(() => fetch('/getThreadProgress', checkProgressRequestOptions)
                                 .then(progressServerPromise => {
                                     if (progressServerPromise.status === 500) {
                                         fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                                        clearInterval(refreshIntervalId)
                                     }
                                     if (progressServerPromise.status === 422) {
                                         progressServerPromise.json().then(error => {
                                             fireSwalError('Status 422 - Server error', error['error_message'])
+                                            clearInterval(refreshIntervalId)
                                         })
                                     }
                                     if (progressServerPromise.status === 200) {
                                         progressServerPromise.json().then(json_response => {
-                                            this.setState({model_projection_in_classifier_training_progress: json_response["thread_progress"]})
-                                            document.getElementById("pb_thread_"+thread_id).setAttribute('aria-valuenow', Number(json_response["thread_progress"]));
-                                            document.getElementById("pb_thread_"+thread_id).setAttribute('style','width:'+ Number(json_response["thread_progress"])+'%');
+                                            const progress_value = json_response["thread_progress"]
+                                            document.getElementById("pb_thread_" + thread_id).setAttribute('aria-valuenow', progress_value)
+                                            document.getElementById("pb_thread_" + thread_id).setAttribute('style','width:'+ Number(progress_value)+'%')
+
+                                            // If the training is complete, we can stop asking for updates
+                                            if(progress_value >= 100) {
+                                                clearInterval(refreshIntervalId)
+                                            }
                                         })
                                     }
                                 }),1000)
+
+                            // Open the download notification on screen
+                            enqueueSnackbar({
+                                anchorOrigin: { vertical: 'bottom', horizontal: 'right', },
+                                persist: true,
+                                content: (key, message) => <DownloadSnackbar id={key}
+                                                                             message={message}
+                                                                             thread_id={thread_id}
+                                                                             refreshIntervalId={refreshIntervalId}/>,
+                            })
                         }))
                     // Other clustering models are fast, so we just wait for the result
                     } else {

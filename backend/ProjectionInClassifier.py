@@ -3,16 +3,18 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
-from time import sleep
 
 from TabularNCD import get_simple_layer
 from sklearn.cluster import KMeans
+from time import sleep
 from torch import nn
 import numpy as np
 import threading
 import utils
 import torch
 import math
+
+class KilledException(Exception): pass
 
 
 class NewThreadedTrainingTask(threading.Thread):
@@ -27,6 +29,15 @@ class NewThreadedTrainingTask(threading.Thread):
         self.device = ProjectionInClassifierModelToTrain.device
         self.app = ProjectionInClassifierModelToTrain.app
 
+        # Event that will be set when .stop() is called on this thread
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
+
     def run(self):
         optimizer = torch.optim.AdamW(self.model_to_train.parameters(), lr=self.model_to_train.learning_rate)
 
@@ -40,49 +51,56 @@ class NewThreadedTrainingTask(threading.Thread):
         n_current_training_step = 0
         n_total_training_step = n_batchs * self.num_epochs
 
-        for epoch in range(self.num_epochs):
+        try:
+            for epoch in range(self.num_epochs):
+                self.app.logger.debug("Training progress at {:.1f}%...".format(self.progress_percentage))
 
-            self.app.logger.debug("Training progress at {:.1f}%...".format(self.progress_percentage))
+                train_losses = []
 
-            train_losses = []
+                batch_start_index, batch_end_index = 0, min(self.batch_size, len(self.x_train))
+                for batch_index in range(n_batchs):
+                    batch_x_train = self.x_train[batch_start_index:batch_end_index]
+                    batch_y_train = self.y_train[batch_start_index:batch_end_index]
+                    batch_y_train = torch.tensor(batch_y_train, dtype=torch.int64, device=self.device)
 
-            batch_start_index, batch_end_index = 0, min(self.batch_size, len(self.x_train))
-            for batch_index in range(n_batchs):
-                batch_x_train = self.x_train[batch_start_index:batch_end_index]
-                batch_y_train = self.y_train[batch_start_index:batch_end_index]
-                batch_y_train = torch.tensor(batch_y_train, dtype=torch.int64, device=self.device)
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
 
-                # zero the parameter gradients
-                optimizer.zero_grad()
+                    # forward
+                    encoded_batch_x = self.model_to_train.encoder_forward(batch_x_train)
+                    y_pred = self.model_to_train.classifier_forward(encoded_batch_x)
 
-                # forward
-                encoded_batch_x = self.model_to_train.encoder_forward(batch_x_train)
-                y_pred = self.model_to_train.classifier_forward(encoded_batch_x)
+                    # compute loss
+                    supervised_loss = nn.CrossEntropyLoss()(y_pred, batch_y_train)
 
-                # compute loss
-                supervised_loss = nn.CrossEntropyLoss()(y_pred, batch_y_train)
+                    # backward
+                    supervised_loss.backward()
 
-                # backward
-                supervised_loss.backward()
+                    # update the weights using gradient descent
+                    optimizer.step()
 
-                # update the weights using gradient descent
-                optimizer.step()
+                    # Save loss for plotting purposes
+                    train_losses.append(supervised_loss.item())
 
-                # Save loss for plotting purposes
-                train_losses.append(supervised_loss.item())
+                    n_current_training_step += 1
+                    self.progress_percentage = (n_current_training_step / n_total_training_step) * 100
 
-                n_current_training_step += 1
-                self.progress_percentage = (n_current_training_step / n_total_training_step) * 100
+                    batch_start_index += self.batch_size
+                    batch_end_index = min((batch_end_index + self.batch_size), self.x_train.shape[0])
 
-                batch_start_index += self.batch_size
-                batch_end_index = min((batch_end_index + self.batch_size), self.x_train.shape[0])
+                    sleep(1)
 
-                sleep(1)
+                    if self.stopped() is True:
+                        raise KilledException
 
-            losses_dict['epoch_mean_train_losses'].append(np.mean(train_losses))
-            # losses_dict['epoch_mean_train_acc'].append(evaluate_supervised_model_accuracy(self.x_train, self.y_train, self.model_to_train))
+                losses_dict['epoch_mean_train_losses'].append(np.mean(train_losses))
+                # losses_dict['epoch_mean_train_acc'].append(evaluate_supervised_model_accuracy(self.x_train, self.y_train, self.model_to_train))
 
-        self.app.logger.info("Training complete")
+            self.app.logger.info("Training complete")
+
+        except KilledException:
+            print("Training thread stopping...")
+            # ToDo optional cleanup
 
 
 class ProjectionInClassifier(nn.Module):
