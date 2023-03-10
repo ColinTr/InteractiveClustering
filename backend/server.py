@@ -275,6 +275,8 @@ def runClustering():
     # Try to find the configuration in the results_dict
     tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
 
+    unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+
     # Try to find if the image was already generated beforehand
     if tsne_array is not None:
         image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
@@ -289,32 +291,31 @@ def runClustering():
     if model_name == "k_means":
         k_means_n_clusters = model_config['k_means_n_clusters']
 
-        # We train only on the unknown data
-        unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
-
         kmeans_model = KMeans(n_clusters=k_means_n_clusters,
                               random_state=random_state,
                               n_init="auto")
+
+        # We train only on the unknown data
         clustering_prediction = kmeans_model.fit_predict(filtered_dataset[unknown_mask])
 
-        full_target_to_plot = np.array(dataset[target_name])
-        full_target_to_plot[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+        full_target = np.array(dataset[target_name])
+        full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
 
     elif model_name == "spectral_clustering":
         spectral_clustering_n_clusters = model_config['spectral_clustering_n_clusters']
         spectral_clustering_affinity = model_config['spectral_clustering_affinity']
 
-        # We train only on the unknown data
-        unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
         spectral_clustering_model = SpectralClustering(n_clusters=spectral_clustering_n_clusters,
                                                        affinity=spectral_clustering_affinity,
                                                        random_state=random_state,
                                                        assign_labels='discretize')
+
+        # We train only on the unknown data
         clustering_prediction = spectral_clustering_model.fit(filtered_dataset[unknown_mask])
         clustering_prediction = clustering_prediction.labels_
 
-        full_target_to_plot = np.array(dataset[target_name])
-        full_target_to_plot[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+        full_target = np.array(dataset[target_name])
+        full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
 
     elif model_name == "tabularncd":
         print("ToDo tabularncd")
@@ -387,7 +388,11 @@ def runClustering():
     fig = Figure(figsize=(8, 8))
     axis = fig.add_subplot(1, 1, 1)
     axis.set_title("T-SNE of the original " + dataset_name + " dataset colored by " + model_name)
-    sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=full_target_to_plot[unknown_mask])
+    if show_unknown_only is True:
+        target_to_plot = full_target[unknown_mask]
+    else:
+        target_to_plot = full_target
+    sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_to_plot)
     fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
     results_dict[dataset_name][corresponding_tsne_config_name]['images_configurations']['image_' + image_datetime_string] = {
