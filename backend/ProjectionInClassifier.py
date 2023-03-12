@@ -108,7 +108,7 @@ class NewProjectionInClassifierThreadedTrainingTask(threading.Thread):
 class ProjectionInClassifier(nn.Module):
     def __init__(self, app, layers_sizes, n_clusters, p_dropout, activation_fct, learning_rate, x_train, y_train,
                  batch_size, num_epochs, dataset_name, target_name, known_classes, unknown_classes, selected_features,
-                 show_unknown_only, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name):
+                 tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name):
         super(ProjectionInClassifier, self).__init__()
 
         # Architecture
@@ -142,7 +142,6 @@ class ProjectionInClassifier(nn.Module):
         self.unknown_classes = unknown_classes
         self.selected_features = selected_features
         self.name = "projection_in_classifier"
-        self.show_unknown_only = show_unknown_only
         self.tsne_array = tsne_array
         self.random_state = random_state
         self.color_by = color_by

@@ -371,8 +371,8 @@ def runClustering():
                                        model_config['projection_in_classifier_activation_fct'],
                                        model_config['projection_in_classifier_lr'],
                                        x_train, y_train_mapped, batch_size, num_epochs, dataset_name, target_name,
-                                       known_classes, unknown_classes, selected_features, show_unknown_only, tsne_array,
-                                       random_state,  color_by, model_config, corresponding_tsne_config_name)  # We need to save these variables for the next request that will ask to generate the image
+                                       known_classes, unknown_classes, selected_features, tsne_array, random_state,
+                                       color_by, model_config, corresponding_tsne_config_name)  # We need to save these variables for the next request that will ask to generate the image
 
         # Start training in a new thread to avoid blocking the server while training the model
         global running_threads
