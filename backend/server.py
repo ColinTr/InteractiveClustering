@@ -4,7 +4,7 @@ Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
 
-from ProjectionInClassifier import ProjectionInClassifier, NewThreadedTrainingTask
+from ProjectionInClassifier import ProjectionInClassifier, NewProjectionInClassifierThreadedTrainingTask
 from sklearn.cluster import KMeans, SpectralClustering
 from flask import Flask, jsonify, request, send_file
 from sklearn.multiclass import OneVsRestClassifier
@@ -34,7 +34,7 @@ CORS(app)
 
 # Global dict for storing data in between requests
 # /!\ DO NOT USE IF THE SERVER IS DEPLOYED IN PRODUCTION /!\
-session = {}
+session = {"loaded_datasets": {}}
 running_threads = {}
 
 
@@ -54,7 +54,7 @@ def getFileHeader():
     data = request.get_json()
     file_path = os.path.join('..', 'datasets', data['selected_file_path'])
     dataset = pd.read_csv(file_path)
-    session['loaded_dataset'] = dataset  # dataset.to_json()
+    session['loaded_datasets'][data['dataset_name']] = dataset  # dataset.to_json()
     columns_names = dataset.columns
 
     return corsify_response(jsonify({"file_header": columns_names.tolist()}))
@@ -62,11 +62,11 @@ def getFileHeader():
 
 @app.route('/getFeatureUniqueValues', methods=['POST'])
 def getFeatureUniqueValues():
-    if "loaded_dataset" not in session.keys():
+    data = request.get_json()
+    if data['dataset_name'] not in session['loaded_datasets'].keys():
         return jsonify({"error_message": "Dataset not loaded"}), 422
 
-    dataset = session.get('loaded_dataset')
-    data = request.get_json()
+    dataset = session['loaded_datasets'].get(data['dataset_name'])
     feature_name = data['feature_name']
     unique_values = dataset[feature_name].unique()
     return corsify_response(jsonify({"unique_values": unique_values.tolist()})), 200
@@ -167,13 +167,12 @@ def findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_
 
 @app.route('/getDatasetTSNE', methods=['POST'])
 def getDatasetTSNE():
-    if "loaded_dataset" not in session.keys():
+    data = request.get_json()
+    dataset_name = data['dataset_name']
+    if dataset_name not in session['loaded_datasets'].keys():
         return jsonify({"error_message": "Dataset not loaded"}), 422
 
-    dataset = session.get('loaded_dataset')
-    data = request.get_json()
-
-    dataset_name = data['dataset_name']
+    dataset = session['loaded_datasets'].get(dataset_name)
 
     tsne_config = data['tsne_config']
     selected_features = tsne_config['selected_features']
@@ -245,13 +244,12 @@ def getDatasetTSNE():
 
 @app.route('/runClustering', methods=['POST'])
 def runClustering():
-    if "loaded_dataset" not in session.keys():
+    data = request.get_json()
+    dataset_name = data['dataset_name']
+    if dataset_name not in session['loaded_datasets'].keys():
         return jsonify({"error_message": "Dataset not loaded"}), 422
 
-    dataset = session.get('loaded_dataset')
-    data = request.get_json()
-
-    dataset_name = data['dataset_name']
+    dataset = session['loaded_datasets'].get(dataset_name)
 
     tsne_config = data['tsne_config']
     selected_features = tsne_config['selected_features']
@@ -301,6 +299,14 @@ def runClustering():
         full_target = np.array(dataset[target_name])
         full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
 
+        saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
+
+        generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
+                                                           tsne_array, random_state, color_by, model_config,  known_classes,
+                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask)
+
+        return send_file(generated_image_filepath, mimetype='image/png')
+
     elif model_name == "spectral_clustering":
         spectral_clustering_n_clusters = model_config['spectral_clustering_n_clusters']
         spectral_clustering_affinity = model_config['spectral_clustering_affinity']
@@ -316,6 +322,14 @@ def runClustering():
 
         full_target = np.array(dataset[target_name])
         full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+
+        saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
+
+        generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
+                                                           tsne_array, random_state, color_by, model_config,  known_classes,
+                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask)
+
+        return send_file(generated_image_filepath, mimetype='image/png')
 
     elif model_name == "tabularncd":
         print("ToDo tabularncd")
@@ -337,14 +351,6 @@ def runClustering():
         return jsonify({"error_message": "Model not implemented in the server"}), 422
 
     elif model_name == 'projection_in_classifier':
-
-        model = ProjectionInClassifier(app,
-                                       model_config['projection_in_classifier_architecture'],
-                                       model_config['projection_in_classifier_n_clusters'],
-                                       model_config['projection_in_classifier_dropout'],
-                                       model_config['projection_in_classifier_activation_fct'],
-                                       model_config['projection_in_classifier_lr'])
-
         batch_size = 256
         num_epochs = 30
 
@@ -358,9 +364,19 @@ def runClustering():
         y_train_mapped = np.array(list(map(mapping_dict.get, y_train)))
         # y_test_known_mapped = np.array(list(map(mapping_dict.get, y_test_known)))
 
+        model = ProjectionInClassifier(app,
+                                       model_config['projection_in_classifier_architecture'],
+                                       model_config['projection_in_classifier_n_clusters'],
+                                       model_config['projection_in_classifier_dropout'],
+                                       model_config['projection_in_classifier_activation_fct'],
+                                       model_config['projection_in_classifier_lr'],
+                                       x_train, y_train_mapped, batch_size, num_epochs, dataset_name, target_name,
+                                       known_classes, unknown_classes, selected_features, show_unknown_only, tsne_array,
+                                       random_state,  color_by, model_config, corresponding_tsne_config_name)  # We need to save these variables for the next request that will ask to generate the image
+
         # Start training in a new thread to avoid blocking the server while training the model
         global running_threads
-        new_thread = NewThreadedTrainingTask(model, x_train, y_train_mapped, batch_size, num_epochs)
+        new_thread = NewProjectionInClassifierThreadedTrainingTask(model)
         new_thread.start()
         running_threads[new_thread.ident] = new_thread
 
@@ -368,6 +384,9 @@ def runClustering():
     else:
         return jsonify({"error_message": "Clustering method " + model_name + " not implemented yet"}), 422
 
+
+def saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes,
+                                   selected_features):
     # Save the prediction of the clustering for future rules generation
     session['last_clustering_prediction'] = clustering_prediction.tolist()
     session['last_clustering_target_name'] = target_name
@@ -376,6 +395,10 @@ def runClustering():
     session['last_clustering_unknown_classes'] = unknown_classes
     session['last_clustering_selected_features'] = selected_features
 
+
+def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target, tsne_array, random_state,
+                            color_by, model_config, known_classes, unknown_classes, corresponding_tsne_config_name,
+                            unknown_mask):
     image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
 
     if not os.path.isdir(image_folder_path):
@@ -395,6 +418,7 @@ def runClustering():
     sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_to_plot)
     fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
+    results_dict = loadResultsDict()
     results_dict[dataset_name][corresponding_tsne_config_name]['images_configurations']['image_' + image_datetime_string] = {
         "image_configuration": {
             "random_state": random_state,
@@ -408,15 +432,17 @@ def runClustering():
 
     saveResultsDict(results_dict)
 
-    return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
+    return os.path.join(image_folder_path, image_filename)
 
 
 @app.route('/runRulesGeneration', methods=['POST'])
 def runRulesGeneration():
-    if "loaded_dataset" not in session.keys():
+    data = request.get_json()
+    dataset_name = data['dataset_name']
+    if dataset_name not in session['loaded_datasets'].keys():
         return jsonify({"error_message": "Dataset not loaded"}), 422
 
-    dataset = session.get('loaded_dataset')
+    dataset = session['loaded_datasets'].get(dataset_name)
 
     last_clustering_prediction = session.get('last_clustering_prediction')
     last_clustering_target_name = session.get('last_clustering_target_name')
@@ -561,21 +587,67 @@ def clearServerCache():
 @app.route('/getThreadProgress', methods=["POST"])
 def getThreadProgress():
     data = request.get_json()
-    if data["thread_id"] in running_threads.keys():
-        return jsonify({"thread_progress": running_threads[data["thread_id"]].progress_percentage}), 200
-    else:
+    if data["thread_id"] not in running_threads.keys():
         return jsonify({"error_message": "thread not running"}), 422
+
+    return jsonify({"thread_progress": running_threads[data["thread_id"]].progress_percentage}), 200
 
 
 @app.route('/cancelTrainingThread', methods=["POST"])
 def cancelTrainingThread():
     data = request.get_json()
-    if data["thread_id"] in running_threads.keys():
-        running_threads[data["thread_id"]].stop()
-        del running_threads[data["thread_id"]]
-        return "success", 200
-    else:
+    if data["thread_id"] not in running_threads.keys():
         return jsonify({"error_message": "thread not running"}), 422
+
+    running_threads[data["thread_id"]].stop()
+    del running_threads[data["thread_id"]]
+    return "success", 200
+
+
+@app.route('/getThreadResults', methods=["POST"])
+def getThreadResults():
+    data = request.get_json()
+
+    if data["thread_id"] not in running_threads.keys():
+        return jsonify({"error_message": "Thread not running"}), 422
+
+    model_thread = running_threads[data["thread_id"]]
+    model = model_thread.model_to_train
+
+    if model_thread.progress_percentage < 100:
+        return jsonify({"error_message": "Model still training"}), 422
+
+    dataset_name = model.dataset_name
+    if dataset_name not in session['loaded_datasets'].keys():
+        return jsonify({"error_message": "Dataset not loaded"}), 422
+    dataset = session['loaded_datasets'].get(dataset_name)
+
+    target_name = model.target_name
+    known_classes = model.known_classes
+    unknown_classes = model.unknown_classes
+    unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+    selected_features = model.selected_features
+    model_name = model.name
+    show_unknown_only = data['show_unknown_only']
+    tsne_array = model.tsne_array
+    random_state = model.random_state
+    color_by = model.color_by
+    model_config = model.model_config
+    corresponding_tsne_config_name = model.corresponding_tsne_config_name
+
+    clustering_prediction = model.predict_new_data(np.array(dataset[selected_features])[unknown_mask])
+
+    full_target = np.array(dataset[target_name])
+    full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+
+    saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
+
+    generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
+                                                       tsne_array, random_state, color_by, model_config,  known_classes,
+                                                       unknown_classes, corresponding_tsne_config_name, unknown_mask)
+
+    return send_file(generated_image_filepath, mimetype='image/png')
+
 
 @app.errorhandler(500)
 def internal_error(error):

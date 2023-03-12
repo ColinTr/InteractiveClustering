@@ -332,7 +332,9 @@ class FullPage extends React.Component {
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({'feature_name': feature_name})
+            body: JSON.stringify({
+                'dataset_name': this.state.dataset_name,
+                'feature_name': feature_name})
         }
         fetch('/getFeatureUniqueValues', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
@@ -651,7 +653,8 @@ class FullPage extends React.Component {
                                 content: (key, message) => <DownloadSnackbar id={key}
                                                                              message={message}
                                                                              thread_id={thread_id}
-                                                                             refreshIntervalId={refreshIntervalId} />,
+                                                                             refreshIntervalId={refreshIntervalId}
+                                                                             onSeeResultsButtonClick={this.onSeeResultsButtonClick}/>,
                             })
                         }))
                     // Other clustering models are fast, so we just wait for the result
@@ -769,6 +772,35 @@ class FullPage extends React.Component {
         let model_projection_in_classifier_hidden_layers_copy = [...this.state.model_projection_in_classifier_hidden_layers]
         model_projection_in_classifier_hidden_layers_copy.splice(layer_index, 1)
         this.setState({model_projection_in_classifier_hidden_layers: model_projection_in_classifier_hidden_layers_copy})
+    }
+
+    onSeeResultsButtonClick = (thread_id) => {
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+
+            body: JSON.stringify({
+                'thread_id': thread_id,
+                'show_unknown_only': this.state.show_unknown_only
+            })
+        }
+        fetch('/getThreadResults', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
+                    })
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.blob().then(image_response_blob => {
+                        const imageObjectURL = URL.createObjectURL(image_response_blob);
+                        this.setState({image_to_display: imageObjectURL})
+                    })
+                }
+            })
     }
 
     render() {

@@ -38,19 +38,13 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                     }
                 }).fire({
                     icon: 'success',
-                    title: 'Training stopped'
+                    title: "Thread " + props.thread_id + " stopped training"
                 })
 
                 // Close this snackbar
                 closeSnackbar(props.id)
             }
         })
-    }
-
-    function onDoneButtonClick() {
-        // ToDo show the result of the training here...
-
-        // closeSnackbar(props.id)
     }
 
     return (
@@ -76,7 +70,7 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                             </button>
                         </Col>
                         <Col className="col-6 d-flex flex-column align-items-end">
-                            <button type="button" className="btn btn-success" onClick={onDoneButtonClick}>
+                            <button type="button" className="btn btn-success" onClick={() => props.onSeeResultsButtonClick(props.thread_id)}>
                                 See results
                             </button>
                         </Col>

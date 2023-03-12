@@ -27,10 +27,13 @@ class DatasetSelector extends React.Component {
         if (this.state.selectedFile === ""){
             fireSwalError('Please select a file to load')
         } else {
+            const dataset_name = this.state.selectedFile.replace(/\.[^/.]+$/, "")
             const requestOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({'selected_file_path': this.state.selectedFile})
+                body: JSON.stringify({
+                    'selected_file_path': this.state.selectedFile,
+                    'dataset_name': dataset_name})
             }
             fetch('/getFileHeader', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
                 .then(serverPromise => {
@@ -46,7 +49,6 @@ class DatasetSelector extends React.Component {
                         serverPromise.json().then(response => {
                             // The features we just received from the server are sent to the FullPage.js component
                             this.props.onNewFeaturesLoaded(response['file_header'])
-                            const dataset_name = this.state.selectedFile.replace(/\.[^/.]+$/, "")
                             this.props.setDatasetNameHandler(dataset_name)
                         })
                     }

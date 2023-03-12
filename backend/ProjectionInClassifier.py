@@ -14,18 +14,20 @@ import utils
 import torch
 import math
 
-class KilledException(Exception): pass
+
+class KilledException(Exception):
+    pass
 
 
-class NewThreadedTrainingTask(threading.Thread):
-    def __init__(self, ProjectionInClassifierModelToTrain, x_train, y_train, batch_size, num_epochs):
-        super(NewThreadedTrainingTask, self).__init__()
+class NewProjectionInClassifierThreadedTrainingTask(threading.Thread):
+    def __init__(self, ProjectionInClassifierModelToTrain):
+        super(NewProjectionInClassifierThreadedTrainingTask, self).__init__()
         self.progress_percentage = 0
         self.model_to_train = ProjectionInClassifierModelToTrain
-        self.x_train = torch.tensor(x_train, device=ProjectionInClassifierModelToTrain.device, dtype=torch.float)
-        self.y_train = y_train
-        self.batch_size = batch_size
-        self.num_epochs = num_epochs
+        self.x_train = torch.tensor(ProjectionInClassifierModelToTrain.x_train, device=ProjectionInClassifierModelToTrain.device, dtype=torch.float)
+        self.y_train = ProjectionInClassifierModelToTrain.y_train
+        self.batch_size = ProjectionInClassifierModelToTrain.batch_size
+        self.num_epochs = ProjectionInClassifierModelToTrain.num_epochs
         self.device = ProjectionInClassifierModelToTrain.device
         self.app = ProjectionInClassifierModelToTrain.app
 
@@ -88,10 +90,10 @@ class NewThreadedTrainingTask(threading.Thread):
                     batch_start_index += self.batch_size
                     batch_end_index = min((batch_end_index + self.batch_size), self.x_train.shape[0])
 
-                    sleep(1)
-
                     if self.stopped() is True:
                         raise KilledException
+
+                # sleep(0.5)
 
                 losses_dict['epoch_mean_train_losses'].append(np.mean(train_losses))
                 # losses_dict['epoch_mean_train_acc'].append(evaluate_supervised_model_accuracy(self.x_train, self.y_train, self.model_to_train))
@@ -104,9 +106,12 @@ class NewThreadedTrainingTask(threading.Thread):
 
 
 class ProjectionInClassifier(nn.Module):
-    def __init__(self, app, layers_sizes, n_clusters, p_dropout, activation_fct, learning_rate):
+    def __init__(self, app, layers_sizes, n_clusters, p_dropout, activation_fct, learning_rate, x_train, y_train,
+                 batch_size, num_epochs, dataset_name, target_name, known_classes, unknown_classes, selected_features,
+                 show_unknown_only, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name):
         super(ProjectionInClassifier, self).__init__()
 
+        # Architecture
         if len(layers_sizes) > 2:
             encoder_layers = []
             for i in range(1, len(layers_sizes) - 1):
@@ -119,11 +124,30 @@ class ProjectionInClassifier(nn.Module):
 
         self.classifier = nn.Linear(layers_sizes[-2], layers_sizes[-1])
 
+        # Variables for training
         self.learning_rate = learning_rate
         self.n_clusters = n_clusters
         self.app = app
         self.device = utils.setup_device(app, use_cuda=True)
         self.to(self.device)
+        self.x_train = x_train
+        self.y_train = y_train
+        self.batch_size = batch_size
+        self.num_epochs = num_epochs
+
+        # Variables for image generation and server requests
+        self.dataset_name = dataset_name
+        self.target_name = target_name
+        self.known_classes = known_classes
+        self.unknown_classes = unknown_classes
+        self.selected_features = selected_features
+        self.name = "projection_in_classifier"
+        self.show_unknown_only = show_unknown_only
+        self.tsne_array = tsne_array
+        self.random_state = random_state
+        self.color_by = color_by
+        self.model_config = model_config
+        self.corresponding_tsne_config_name = corresponding_tsne_config_name
 
     def encoder_forward(self, x):
         return self.encoder(x)
@@ -132,10 +156,19 @@ class ProjectionInClassifier(nn.Module):
         return self.classifier(encoded_x)
 
     def predict_new_data(self, new_data):
-        projected_new_data = self.encoder(new_data)
+        self.eval()
 
-        kmeans_model = KMeans(n_clusters=self.n_clusters, n_init="auto")
+        with torch.no_grad():
 
-        clustering_prediction = kmeans_model.fit_predict(projected_new_data)
+            new_data = torch.tensor(new_data, device=self.device, dtype=torch.float)
+
+            projected_new_data = self.encoder(new_data)
+            projected_new_data = np.array(projected_new_data.cpu())
+
+            kmeans_model = KMeans(n_clusters=self.n_clusters, n_init="auto")
+
+            clustering_prediction = kmeans_model.fit_predict(projected_new_data)
+
+        self.train()
 
         return clustering_prediction
