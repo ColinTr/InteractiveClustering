@@ -10,7 +10,7 @@ import fireSwalError from "./swal_functions";
 import RulesGenerator from "./RulesGenerator";
 import RulesDisplayModal from "./RulesDisplayModal";
 import Swal from "sweetalert2";
-import {enqueueSnackbar} from 'notistack'
+import {closeSnackbar, enqueueSnackbar} from 'notistack'
 import DownloadSnackbar from "./DownloadSnackbar";
 
 class FullPage extends React.Component {
@@ -34,6 +34,9 @@ class FullPage extends React.Component {
             image_to_display: null,
             show_unknown_only: false,
 
+            n_features_used: null,
+            n_known_classes: null,
+
             // Default rules generation parameters
             decision_tree_training_mode: "multi_class",
             decision_tree_unknown_classes_only: false,
@@ -45,31 +48,30 @@ class FullPage extends React.Component {
             decision_tree_response_pdf_file: null,
             decision_tree_response_accuracy_score: null,
 
-            model_params_selected_model : "tabularncd",
+            selected_model : "tabularncd",
 
             // Default TabularNCD parameters
-            model_params_tabncd_n_clusters : 10,
-            model_params_tabncd_cosine_topk : 10,
-            model_params_tabncd_w1 : 0.8,
-            model_params_tabncd_w2 : 0.8,
-            model_params_tabncd_classifier_lr : 0.001,
-            model_params_tabncd_cluster_lr : 0.001,
-            model_params_tabncd_k_neighbors : 5,
-            model_params_tabncd_dropout : 0.2,
-            model_params_tabncd_activation_fct : "sigmoid",
+            model_tabncd_n_clusters : 10,
+            model_tabncd_cosine_topk : 10,
+            model_tabncd_w1 : 0.8,
+            model_tabncd_w2 : 0.8,
+            model_tabncd_classifier_lr : 0.001,
+            model_tabncd_cluster_lr : 0.001,
+            model_tabncd_k_neighbors : 5,
+            model_tabncd_dropout : 0.2,
+            model_tabncd_activation_fct : "sigmoid",
+            model_tabncd_hidden_layers: [],
 
             // Default k means parameters
-            model_params_k_means_n_clusters: 10,
+            model_k_means_n_clusters: 10,
 
             // Default spectral clustering parameters
-            model_params_spectral_clustering_n_clusters: 10,
-            model_params_spectral_clustering_affinity: 'rbf',
+            model_spectral_clustering_n_clusters: 10,
+            model_spectral_clustering_affinity: 'rbf',
 
             // Default projection in classifier parameters
             model_projection_in_classifier_n_clusters: 10,
-            model_projection_in_classifier_input_size: null,
             model_projection_in_classifier_hidden_layers: [],
-            model_projection_in_classifier_output_size: null,
             model_projection_in_classifier_dropout: 0.2,
             model_projection_in_classifier_lr_value : 0.001,
             model_projection_in_classifier_activation_fct: "sigmoid",
@@ -83,7 +85,7 @@ class FullPage extends React.Component {
         const new_formatted_features = new_features.map((feature, index) => ({"name": feature, "checked" : true, index : index, "disabled": false}))
         this.setState({formatted_features: new_formatted_features})
         this.setState({search_filtered_features_list: this.getUpdatedFilteredList(new_formatted_features, this.state.feature_search_query)})
-        this.setState({model_projection_in_classifier_input_size: this.getNumberOfCheckedValues(new_formatted_features)})
+        this.setState({n_features_used: this.getNumberOfCheckedValues(new_formatted_features)})
     }
 
     onChangeFeaturesSearch = query => {
@@ -145,7 +147,7 @@ class FullPage extends React.Component {
 
         const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
         this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-        this.setState({model_projection_in_classifier_input_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+        this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
     }
 
     onUniqueValueSwitchChange = i => {
@@ -156,7 +158,7 @@ class FullPage extends React.Component {
 
         const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
         this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
-        this.setState({model_projection_in_classifier_output_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+        this.setState({n_known_classes: this.getNumberOfCheckedValues(class_values_to_display)})
     }
 
     onSwitchAllOnButtonClick = () => {
@@ -168,7 +170,7 @@ class FullPage extends React.Component {
 
             const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
             this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
-            this.setState({model_projection_in_classifier_output_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+            this.setState({n_known_classes: this.getNumberOfCheckedValues(class_values_to_display)})
         }
     }
 
@@ -180,7 +182,7 @@ class FullPage extends React.Component {
             })
             const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
             this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
-            this.setState({model_projection_in_classifier_output_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+            this.setState({n_known_classes: this.getNumberOfCheckedValues(class_values_to_display)})
         }
     }
 
@@ -192,7 +194,7 @@ class FullPage extends React.Component {
             })
             const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
             this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-            this.setState({model_projection_in_classifier_input_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+            this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
         }
     }
 
@@ -204,7 +206,7 @@ class FullPage extends React.Component {
             })
             const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
             this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-            this.setState({model_projection_in_classifier_input_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+            this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
         }
     }
 
@@ -326,7 +328,7 @@ class FullPage extends React.Component {
         })
         const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
         this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-        this.setState({model_projection_in_classifier_input_size: this.getNumberOfCheckedValues(updated_filtered_list)})
+        this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
 
         // Send request to the Flask server to display the unique values of this feature
         const requestOptions = {
@@ -352,7 +354,7 @@ class FullPage extends React.Component {
                         const new_formatted_class_values = response['unique_values'].map((feature, index) => ({"name": feature, "checked" : true, index : index}))
                         this.setState({class_values_to_display: new_formatted_class_values})
                         this.setState({search_filtered_unique_values_list: this.getUpdatedFilteredList(new_formatted_class_values, this.state.unique_values_search_query)})
-                        this.setState({model_projection_in_classifier_output_size: this.getNumberOfCheckedValues(new_formatted_class_values)})
+                        this.setState({n_known_classes: this.getNumberOfCheckedValues(new_formatted_class_values)})
                     })
                 }
             })
@@ -440,27 +442,23 @@ class FullPage extends React.Component {
     }
 
     on_decision_tree_max_depth_change = (event) => {
-        this.setState({decision_tree_max_depth: event.target.value})
+        this.setState({decision_tree_max_depth: parseInt(event.target.value)})
     }
 
     on_decision_tree_min_samples_split_change = (event) => {
-        this.setState({decision_tree_min_samples_split: event.target.value})
+        this.setState({decision_tree_min_samples_split: parseInt(event.target.value)})
     }
 
     on_decision_tree_decision_tree_max_leaf_nodes_change = (event) => {
-        this.setState({decision_tree_max_leaf_nodes: event.target.value})
+        this.setState({decision_tree_max_leaf_nodes: parseInt(event.target.value)})
     }
 
     on_projection_in_classifier_n_clusters_change = (event) => {
-        this.setState({model_projection_in_classifier_n_clusters: event.target.value})
-    }
-
-    on_projection_in_classifier_hidden_layers_change = (new_values) => {
-        this.setState({model_projection_in_classifier_hidden_layers: new_values})
+        this.setState({model_projection_in_classifier_n_clusters: parseInt(event.target.value)})
     }
 
     on_projection_in_classifier_dropout_change = (event) => {
-        this.setState({model_projection_in_classifier_dropout: event.target.value})
+        this.setState({model_projection_in_classifier_dropout: parseFloat(event.target.value)})
     }
 
     on_projection_in_classifier_activation_fct_change = (event) => {
@@ -468,7 +466,7 @@ class FullPage extends React.Component {
     }
 
     on_projection_in_classifier_lr_change = (event) => {
-        this.setState({model_projection_in_classifier_lr_value: event.target.value})
+        this.setState({model_projection_in_classifier_lr_value: parseFloat(event.target.value)})
     }
 
     onShowUnknownOnlySwitchChange = () => {
@@ -510,11 +508,7 @@ class FullPage extends React.Component {
             fireSwalError("Cannot run clustering", "There are no unknown classes selected")
             return
         }
-        if(this.state.model_params_selected_model === "tabularncd"){
-            fireSwalError("Not implemented yet!")
-            return
-        }
-        if(this.state.model_params_selected_model === "projection_in_classifier"){
+        if(this.state.selected_model === "projection_in_classifier"){
             if(this.state.model_projection_in_classifier_hidden_layers.length === 0){
                 fireSwalError("Please add at least one hidden layer")
                 return
@@ -523,45 +517,46 @@ class FullPage extends React.Component {
 
         let model_config = null
 
-        if(this.state.model_params_selected_model === "tabularncd"){
+        if(this.state.selected_model === "tabularncd"){
             model_config = {
-                'model_name': this.state.model_params_selected_model,
+                'model_name': this.state.selected_model,
 
-                'tabncd_n_clusters': parseInt(this.state.model_params_tabncd_n_clusters),
-                'tabncd_cosine_topk': parseFloat(this.state.model_params_tabncd_cosine_topk),
-                'tabncd_w1': parseFloat(this.state.model_params_tabncd_w1),
-                'tabncd_w2': parseFloat(this.state.model_params_tabncd_w2),
-                'tabncd_classifier_lr': parseFloat(this.state.model_params_tabncd_classifier_lr),
-                'tabncd_cluster_lr': parseFloat(this.state.model_params_tabncd_cluster_lr),
-                'tabncd_k_neighbors': parseInt(this.state.model_params_tabncd_k_neighbors),
-                'tabncd_dropout': parseFloat(this.state.model_params_tabncd_dropout),
-                'tabncd_activation_fct': this.state.model_params_tabncd_activation_fct
+                'tabncd_n_clusters': parseInt(this.state.model_tabncd_n_clusters),
+                // 'tabncd_cosine_topk': parseFloat(this.state.model_tabncd_cosine_topk),
+                'tabncd_w1': parseFloat(this.state.model_tabncd_w1),
+                'tabncd_w2': parseFloat(this.state.model_tabncd_w2),
+                'tabncd_classifier_lr': parseFloat(this.state.model_tabncd_classifier_lr),
+                'tabncd_cluster_lr': parseFloat(this.state.model_tabncd_cluster_lr),
+                'tabncd_k_neighbors': parseInt(this.state.model_tabncd_k_neighbors),
+                'tabncd_dropout': parseFloat(this.state.model_tabncd_dropout),
+                'tabncd_activation_fct': this.state.model_tabncd_activation_fct,
+                'tabncd_hidden_layers': this.state.model_tabncd_hidden_layers
             }
         }
-        else if(this.state.model_params_selected_model === "k_means"){
+        else if(this.state.selected_model === "k_means"){
             model_config = {
-                'model_name': this.state.model_params_selected_model,
+                'model_name': this.state.selected_model,
 
-                'k_means_n_clusters': parseInt(this.state.model_params_k_means_n_clusters),
+                'k_means_n_clusters': parseInt(this.state.model_k_means_n_clusters),
             }
         }
-        else if(this.state.model_params_selected_model === "spectral_clustering") {
+        else if(this.state.selected_model === "spectral_clustering") {
             model_config = {
-                'model_name': this.state.model_params_selected_model,
+                'model_name': this.state.selected_model,
 
-                'spectral_clustering_n_clusters': parseInt(this.state.model_params_spectral_clustering_n_clusters),
-                'spectral_clustering_affinity': this.state.model_params_spectral_clustering_affinity,
+                'spectral_clustering_n_clusters': parseInt(this.state.model_spectral_clustering_n_clusters),
+                'spectral_clustering_affinity': this.state.model_spectral_clustering_affinity,
             }
         }
-        else if(this.state.model_params_selected_model === "projection_in_classifier"){
+        else if(this.state.selected_model === "projection_in_classifier"){
             model_config = {
-                'model_name': this.state.model_params_selected_model,
+                'model_name': this.state.selected_model,
 
                 'projection_in_classifier_n_clusters' : parseInt(this.state.model_projection_in_classifier_n_clusters),
                 'projection_in_classifier_architecture' : Array.prototype.concat(
-                    this.state.model_projection_in_classifier_input_size,
+                    this.state.n_features_used,
                     this.state.model_projection_in_classifier_hidden_layers,
-                    this.state.model_projection_in_classifier_output_size),
+                    this.state.n_known_classes),
                 'projection_in_classifier_dropout' : parseFloat(this.state.model_projection_in_classifier_dropout),
                 'projection_in_classifier_lr' : parseFloat(this.state.model_projection_in_classifier_lr_value),
                 'projection_in_classifier_activation_fct' : this.state.model_projection_in_classifier_activation_fct,
@@ -609,7 +604,7 @@ class FullPage extends React.Component {
                 }
                 if (serverPromise.status === 200) {
                     // This model takes time to train, so we only get the background thread ID to update a progress bar
-                    if(this.state.model_params_selected_model === "projection_in_classifier"){
+                    if(this.state.selected_model === "projection_in_classifier"){
                         serverPromise.json().then((server_response => {
                             const thread_id = server_response["thread_id"]
 
@@ -669,60 +664,60 @@ class FullPage extends React.Component {
     }
 
     onAutoParamsButtonClick = () => {
-        console.log("ToDo auto params for " + this.state.model_params_selected_model)
+        console.log("ToDo auto params for " + this.state.selected_model)
         fireSwalError("Not implemented yet!")
     }
 
     updateSelectedModel = (model_name) => {
-        this.setState({ model_params_selected_model: model_name })
+        this.setState({ model_selected_model: model_name })
     }
 
     on_kmeans_n_clusters_change = (event) => {
-        this.setState({model_params_k_means_n_clusters: event.target.value})
+        this.setState({model_k_means_n_clusters: parseInt(event.target.value)})
     }
 
     on_tabncd_n_clusters_change = (event) => {
-        this.setState({model_params_tabncd_n_clusters: event.target.value})
+        this.setState({model_tabncd_n_clusters: parseInt(event.target.value)})
     }
 
     on_tabncd_cosine_topk_change = (event) => {
-        this.setState({model_params_tabncd_cosine_topk: event.target.value})
+        this.setState({model_tabncd_cosine_topk: parseFloat(event.target.value)})
     }
 
     on_tabncd_w1_change = (event) => {
-        this.setState({model_params_tabncd_w1: event.target.value})
+        this.setState({model_tabncd_w1: parseFloat(event.target.value)})
     }
 
     on_tabncd_w2_change = (event) => {
-        this.setState({model_params_tabncd_w2: event.target.value})
+        this.setState({model_tabncd_w2: parseFloat(event.target.value)})
     }
 
     on_tabncd_classifier_lr_change = (event) => {
-        this.setState({model_params_tabncd_classifier_lr: event.target.value})
+        this.setState({model_tabncd_classifier_lr: parseFloat(event.target.value)})
     }
 
     on_tabncd_cluster_lr_change = (event) => {
-        this.setState({model_params_tabncd_cluster_lr: event.target.value})
+        this.setState({model_tabncd_cluster_lr: parseFloat(event.target.value)})
     }
 
     on_tabncd_k_neighbors_change = (event) => {
-        this.setState({model_params_tabncd_k_neighbors: event.target.value})
+        this.setState({model_tabncd_k_neighbors: parseInt(event.target.value)})
     }
 
     on_tabncd_dropout_change = (event) => {
-        this.setState({model_params_tabncd_dropout: event.target.value})
+        this.setState({model_tabncd_dropout: parseFloat(event.target.value)})
     }
 
     on_tabncd_activation_fct_change = (event) => {
-        this.setState({model_params_tabncd_activation_fct: event.target.value})
+        this.setState({model_tabncd_activation_fct: event.target.value})
     }
 
     on_spectral_clustering_n_clusters_change = (event) => {
-        this.setState({model_params_spectral_clustering_n_clusters: event.target.value})
+        this.setState({model_spectral_clustering_n_clusters: parseInt(event.target.value)})
     }
 
     on_spectral_clustering_affinity_change = (event) => {
-        this.setState({model_params_spectral_clustering_affinity: event.target.value})
+        this.setState({model_spectral_clustering_affinity: event.target.value})
     }
 
     onRulesUnknownClassesOnlySwitchChange = () => {
@@ -774,6 +769,25 @@ class FullPage extends React.Component {
         this.setState({model_projection_in_classifier_hidden_layers: model_projection_in_classifier_hidden_layers_copy})
     }
 
+    onTabncdAddLayerButtonClick = () => {
+        const layer_size = document.getElementById('tabncdLayerSizeInput').value
+
+        if(layer_size === null || layer_size === '' || layer_size <= 0){
+            fireSwalError("Please enter a valid value")
+            return
+        }
+
+        let model_tabncd_hidden_layers_copy = [...this.state.model_tabncd_hidden_layers]
+        model_tabncd_hidden_layers_copy.push(parseInt(layer_size))
+        this.setState({model_tabncd_hidden_layers: model_tabncd_hidden_layers_copy})
+    }
+
+    onTabncdRemoveLayerButtonClick = (layer_index) => {
+        let model_tabncd_hidden_layers_copy = [...this.state.model_tabncd_hidden_layers]
+        model_tabncd_hidden_layers_copy.splice(layer_index, 1)
+        this.setState({model_tabncd_hidden_layers: model_tabncd_hidden_layers_copy})
+    }
+
     onSeeResultsButtonClick = (thread_id) => {
         const requestOptions = {
             method: 'POST',
@@ -801,6 +815,41 @@ class FullPage extends React.Component {
                     })
                 }
             })
+    }
+
+    onClearCacheButtonClick = () => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Clearing the server\'s temporary files might increase the processing time of the next requests.",
+            showDenyButton: true,
+            confirmButtonText: 'Clear',
+            denyButtonText: `Don't clear`,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }
+                fetch('/clearServerCache', requestOptions)
+                    .then(serverPromise => {
+                        if (serverPromise.status === 500) {
+                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                        }
+                        if (serverPromise.status === 422) {
+                            serverPromise.json().then(error => {
+                                fireSwalError('Status 422 - Server error', error['error_message'])
+                            })
+                        }
+                        if (serverPromise.status === 200) {
+                            Swal.fire('Done!', '', 'success')
+
+                            this.setState(this.initial_state)
+
+                            closeSnackbar()  // Closes all opened snackbars
+                        }
+                    })
+            }
+        })
     }
 
     render() {
@@ -855,6 +904,7 @@ class FullPage extends React.Component {
                                            show_unknown_only={this.state.show_unknown_only}
 
                                            onSaveImageButtonClick={this.onSaveImageButtonClick}
+                                           onClearCacheButtonClick={this.onClearCacheButtonClick}
                         />
                     </Row>
                 </Col>
@@ -864,41 +914,44 @@ class FullPage extends React.Component {
                         <ModelSelection onRunModelButtonClick={this.onRunModelButtonClick}
                                         onAutoParamsButtonClick={this.onAutoParamsButtonClick}
                                         updateSelectedModel={this.updateSelectedModel}
-                                        model_params_selected_model={this.state.model_params_selected_model}
+                                        model_params_selected_model={this.state.selected_model}
+
+                                        n_features_used={this.state.n_features_used}
+                                        n_known_classes={this.state.n_known_classes}
 
                                         on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
-                                        tabncd_n_clusters={this.state.model_params_tabncd_n_clusters}
+                                        tabncd_n_clusters={this.state.model_tabncd_n_clusters}
                                         on_tabncd_cosine_topk_change={this.on_tabncd_cosine_topk_change}
-                                        tabncd_cosine_topk={this.state.model_params_tabncd_cosine_topk}
+                                        tabncd_cosine_topk={this.state.model_tabncd_cosine_topk}
                                         on_tabncd_w1_change={this.on_tabncd_w1_change}
-                                        tabncd_w1={this.state.model_params_tabncd_w1}
+                                        tabncd_w1={this.state.model_tabncd_w1}
                                         on_tabncd_w2_change={this.on_tabncd_w2_change}
-                                        tabncd_w2={this.state.model_params_tabncd_w2}
+                                        tabncd_w2={this.state.model_tabncd_w2}
                                         on_tabncd_classifier_lr_change={this.on_tabncd_classifier_lr_change}
-                                        tabncd_classifier_lr={this.state.model_params_tabncd_classifier_lr}
+                                        tabncd_classifier_lr={this.state.model_tabncd_classifier_lr}
                                         on_tabncd_cluster_lr_change={this.on_tabncd_cluster_lr_change}
-                                        tabncd_cluster_lr={this.state.model_params_tabncd_cluster_lr}
+                                        tabncd_cluster_lr={this.state.model_tabncd_cluster_lr}
                                         on_tabncd_k_neighbors_change={this.on_tabncd_k_neighbors_change}
-                                        tabncd_k_neighbors={this.state.model_params_tabncd_k_neighbors}
+                                        tabncd_k_neighbors={this.state.model_tabncd_k_neighbors}
                                         on_tabncd_dropout_change={this.on_tabncd_dropout_change}
-                                        tabncd_dropout={this.state.model_params_tabncd_dropout}
+                                        tabncd_dropout={this.state.model_tabncd_dropout}
                                         on_tabncd_activation_fct_change={this.on_tabncd_activation_fct_change}
+                                        tabncd_hidden_layers={this.state.model_tabncd_hidden_layers}
+                                        onTabncdAddLayerButtonClick={this.onTabncdAddLayerButtonClick}
+                                        onTabncdRemoveLayerButtonClick={this.onTabncdRemoveLayerButtonClick}
 
                                         on_kmeans_n_clusters_change={this.on_kmeans_n_clusters_change}
-                                        k_means_n_clusters={this.state.model_params_k_means_n_clusters}
+                                        k_means_n_clusters={this.state.model_k_means_n_clusters}
                                         onKMeansTrainOnUnknownClassesOnlySwitchChange={this.onKMeansTrainOnUnknownClassesOnlySwitchChange}
 
                                         on_spectral_clustering_n_clusters_change={this.on_spectral_clustering_n_clusters_change}
-                                        spectral_clustering_n_clusters={this.state.model_params_spectral_clustering_n_clusters}
+                                        spectral_clustering_n_clusters={this.state.model_spectral_clustering_n_clusters}
                                         on_spectral_clustering_affinity_change={this.on_spectral_clustering_affinity_change}
-                                        spectral_clustering_affinity={this.state.model_params_spectral_clustering_affinity}
+                                        spectral_clustering_affinity={this.state.model_spectral_clustering_affinity}
 
                                         on_projection_in_classifier_n_clusters_change = {this.on_projection_in_classifier_n_clusters_change}
                                         projection_in_classifier_n_clusters = {this.state.model_projection_in_classifier_n_clusters}
-                                        projection_in_classifier_input_size = {this.state.model_projection_in_classifier_input_size}
-                                        on_projection_in_classifier_hidden_layers_change = {this.on_projection_in_classifier_hidden_layers_change}
                                         projection_in_classifier_hidden_layers = {this.state.model_projection_in_classifier_hidden_layers}
-                                        projection_in_classifier_output_size = {this.state.model_projection_in_classifier_output_size}
                                         on_projection_in_classifier_dropout_change = {this.on_projection_in_classifier_dropout_change}
                                         projection_in_classifier_dropout = {this.state.model_projection_in_classifier_dropout}
                                         on_projection_in_classifier_activation_fct_change = {this.on_projection_in_classifier_activation_fct_change}

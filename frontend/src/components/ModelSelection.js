@@ -53,6 +53,9 @@ class ModelSelection extends React.Component {
                     <Row className="d-flex flex-row py-2" style={{overflowY: "auto", flexGrow:'1', flex:"1 1 auto", height: "0px"}}>
                         {this.state.selected_model === "tabularncd" &&
                             <TabularNCDParameters
+                                n_features_used={this.props.n_features_used}
+                                n_known_classes={this.props.n_known_classes}
+
                                 on_tabncd_n_clusters_change={this.props.on_tabncd_n_clusters_change}
                                 tabncd_n_clusters_value={this.props.tabncd_n_clusters}
 
@@ -78,6 +81,11 @@ class ModelSelection extends React.Component {
                                 tabncd_dropout_value={this.props.tabncd_dropout}
 
                                 on_tabncd_activation_fct_change={this.props.on_tabncd_activation_fct_change}
+
+                                tabncd_hidden_layers={this.props.tabncd_hidden_layers}
+                                onTabncdAddLayerButtonClick={this.props.onTabncdAddLayerButtonClick}
+                                onTabncdRemoveLayerButtonClick={this.props.onTabncdRemoveLayerButtonClick}
+                                tabncd_output_size={this.props.tabncd_output_size}
                             />
                         }
                         {this.state.selected_model === "k_means" &&
@@ -97,12 +105,12 @@ class ModelSelection extends React.Component {
                         }
                         {this.state.selected_model === "projection_in_classifier" &&
                             <ProjectionInClassifierParameters
+                                n_features_used = {this.props.n_features_used}
+                                n_known_classes = {this.props.n_known_classes}
+
                                 on_projection_in_classifier_n_clusters_change = {this.props.on_projection_in_classifier_n_clusters_change}
                                 projection_in_classifier_n_clusters = {this.props.projection_in_classifier_n_clusters}
-                                projection_in_classifier_input_size = {this.props.projection_in_classifier_input_size}
                                 projection_in_classifier_hidden_layers = {this.props.projection_in_classifier_hidden_layers}
-                                on_projection_in_classifier_hidden_layers_change = {this.props.on_projection_in_classifier_hidden_layers_change}
-                                projection_in_classifier_output_size = {this.props.projection_in_classifier_output_size}
                                 on_projection_in_classifier_dropout_change = {this.props.on_projection_in_classifier_dropout_change}
                                 projection_in_classifier_dropout = {this.props.projection_in_classifier_dropout}
                                 on_projection_in_classifier_activation_fct_change = {this.props.on_projection_in_classifier_activation_fct_change}

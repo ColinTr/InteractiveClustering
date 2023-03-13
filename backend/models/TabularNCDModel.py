@@ -3,14 +3,13 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
+from utils import *
 
-from torch import nn
 
-
-class TabularNCD(nn.Module):
+class TabularNCDModel(nn.Module):
     def __init__(self, encoder_layers_sizes, ssl_layers_sizes, joint_learning_layers_sizes,
                  n_known_classes, n_unknown_classes, activation_fct, encoder_last_activation_fct,
-                 ssl_last_activation_fct, joint_last_activation_fct, p_dropout):
+                 ssl_last_activation_fct, joint_last_activation_fct, p_dropout, app):
         """
         The TabularNCD model object. It is composed of 5 main networks : The *encoder*, for SSL the *mask_vector_estimator*
         and *feature_vector_estimator* and for the joint learning the *classification_head* and *clustering_head*.
@@ -25,19 +24,24 @@ class TabularNCD(nn.Module):
         :param joint_last_activation_fct: The very last layer of the classification and clustering networks. Choices : ['relu', 'sigmoid', None].
         :param p_dropout: The probability of dropout. Use p_dropout=0 for no dropout.
         """
-        super(TabularNCD, self).__init__()
+        super(TabularNCDModel, self).__init__()
+
+        self.app = app
+        self.device = setup_device(app, use_cuda=True)
+
+        self.model_name = "tabularncd"
 
         # ==================== encoder ====================
         encoder_layers = []
         for i in range(1, len(encoder_layers_sizes)):
             if i == (len(encoder_layers_sizes) - 1):
-                simple_layer = get_simple_layer(encoder_layers_sizes[i - 1], encoder_layers_sizes[i],
-                                                add_dropout=False,
-                                                activation_fct=encoder_last_activation_fct)
+                simple_layer = get_simple_layer(encoder_layers_sizes[i - 1],
+                                                encoder_layers_sizes[i],
+                                                add_dropout=False, activation_fct=encoder_last_activation_fct)
             else:
-                simple_layer = get_simple_layer(encoder_layers_sizes[i - 1], encoder_layers_sizes[i],
-                                                add_dropout=True, p_dropout=p_dropout,
-                                                activation_fct=activation_fct)
+                simple_layer = get_simple_layer(encoder_layers_sizes[i - 1],
+                                                encoder_layers_sizes[i],
+                                                add_dropout=True, p_dropout=p_dropout, activation_fct=activation_fct)
             [encoder_layers.append(layer) for layer in simple_layer]
 
         self.encoder = nn.Sequential(*encoder_layers)
@@ -99,6 +103,8 @@ class TabularNCD(nn.Module):
             self.clustering_head = nn.Sequential(*clustering_head_layers)
         # =================================================
 
+        self.to(self.device)
+
     def encoder_forward(self, x):
         return self.encoder(x)
 
@@ -113,28 +119,3 @@ class TabularNCD(nn.Module):
         mask_pred = self.mask_vector_estimator(encoded_x)
         feature_pred = self.feature_vector_estimator(encoded_x)
         return mask_pred, feature_pred
-
-
-def get_simple_layer(size_in, size_out, add_dropout=True, p_dropout=0.3, activation_fct='sigmoid'):
-    """
-    General function to define a layer with a single dense layer, followed *optionally* by a dropout and activation layer.
-    :param size_in: The input size of the dense layer.
-    :param size_out:  The output size of the dense layer.
-    :param add_dropout: Add a dropout layer of not.
-    :param p_dropout: The probability of the dropout layer.
-    :param activation_fct: The activation function. Choices : ['relu', 'sigmoid', 'tanh', None].
-    :return: List : The layers.
-    """
-    simple_layer = [nn.Linear(size_in, size_out)]
-
-    if add_dropout is True:
-        simple_layer.append(nn.Dropout(p=p_dropout))
-
-    if activation_fct == 'relu':
-        simple_layer.append(nn.ReLU())
-    elif activation_fct == 'sigmoid':
-        simple_layer.append(nn.Sigmoid())
-    elif activation_fct == 'tanh':
-        simple_layer.append(nn.Tanh())
-
-    return simple_layer

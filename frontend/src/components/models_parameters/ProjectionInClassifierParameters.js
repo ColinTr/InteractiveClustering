@@ -124,9 +124,9 @@ const ProjectionInClassifierParameters = (props) => {
                                     <tr>
                                         <td scope="row">Input</td>
                                         <td>
-                                            <Tooltip title="(number of selected features, size first hidden layer)">
+                                            <Tooltip title="(number of selected features)">
                                                 <div>
-                                                    ({format_input_output_size(props.projection_in_classifier_input_size)})
+                                                    ({format_input_output_size(props.n_features_used)})
                                                 </div>
                                             </Tooltip>
                                         </td>
@@ -137,12 +137,12 @@ const ProjectionInClassifierParameters = (props) => {
                                         <tr key={"hidden_layer_row_" + layer_index}>
                                             <td scope="row">Dense {layer_index}</td>
                                             <td>({(layer_index === 0)
-                                                    ? format_input_output_size(props.projection_in_classifier_input_size)
+                                                    ? format_input_output_size(props.n_features_used)
                                                     : props.projection_in_classifier_hidden_layers[layer_index - 1]}, {layer_size})</td>
                                             <td>{(layer_index === 0)
-                                                ? (props.projection_in_classifier_input_size === null)
+                                                ? (props.n_features_used === null)
                                                     ? '?'
-                                                    : props.projection_in_classifier_input_size * layer_size + layer_size
+                                                    : props.n_features_used * layer_size + layer_size
                                                 : props.projection_in_classifier_hidden_layers[layer_index - 1] * layer_size + layer_size}</td>
                                             <td>
                                                 <Button className="btn-secondary"
@@ -185,17 +185,17 @@ const ProjectionInClassifierParameters = (props) => {
                                                 <div>
                                                     ({(props.projection_in_classifier_hidden_layers.length > 0)
                                                     ? props.projection_in_classifier_hidden_layers[props.projection_in_classifier_hidden_layers.length - 1]
-                                                    : format_input_output_size(props.projection_in_classifier_input_size)}, {format_input_output_size(props.projection_in_classifier_output_size)})
+                                                    : format_input_output_size(props.n_features_used)}, {format_input_output_size(props.n_known_classes)})
                                                 </div>
                                             </Tooltip>
                                         </td>
                                         <td>{(props.projection_in_classifier_hidden_layers.length > 0)
-                                            ? (props.projection_in_classifier_output_size !== null)
-                                                ? props.projection_in_classifier_hidden_layers[props.projection_in_classifier_hidden_layers.length - 1] * props.projection_in_classifier_output_size + props.projection_in_classifier_output_size
+                                            ? (props.n_known_classes !== null)
+                                                ? props.projection_in_classifier_hidden_layers[props.projection_in_classifier_hidden_layers.length - 1] * props.n_known_classes + props.n_known_classes
                                                 : '?'
-                                            : ((props.projection_in_classifier_input_size === null || props.projection_in_classifier_output_size === null)
+                                            : ((props.n_features_used === null || props.n_known_classes === null)
                                                 ? '?'
-                                                : props.projection_in_classifier_input_size * props.projection_in_classifier_output_size + props.projection_in_classifier_output_size)}</td>
+                                                : props.n_features_used * props.n_known_classes + props.n_known_classes)}</td>
                                         <td></td>
                                     </tr>
                                     </tbody>

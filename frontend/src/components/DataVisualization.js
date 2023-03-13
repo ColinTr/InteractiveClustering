@@ -6,8 +6,6 @@ import Button from "react-bootstrap/Button";
 import {Tooltip} from "@mui/material";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
-import Swal from "sweetalert2";
-import fireSwalError from "./swal_functions";
 
 
 class DataVisualization extends React.Component {
@@ -28,37 +26,6 @@ class DataVisualization extends React.Component {
         }
     }
 
-    onClearCacheButtonClick = () => {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "Clearing the server\'s temporary files might increase the processing time of the next requests.",
-            showDenyButton: true,
-            confirmButtonText: 'Clear',
-            denyButtonText: `Don't clear`,
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const requestOptions = {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                }
-                fetch('/clearServerCache', requestOptions)
-                    .then(serverPromise => {
-                        if (serverPromise.status === 500) {
-                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
-                        }
-                        if (serverPromise.status === 422) {
-                            serverPromise.json().then(error => {
-                                fireSwalError('Status 422 - Server error', error['error_message'])
-                            })
-                        }
-                        if (serverPromise.status === 200) {
-                            Swal.fire('Done!', '', 'success')
-                        }
-                    })
-            }
-        })
-    }
-
     render() {
         return (
             <Container style={{height:"100%"}}>
@@ -66,20 +33,20 @@ class DataVisualization extends React.Component {
                     <Row className="d-flex flex-row" style={{paddingRight: "6px"}}>
                         <div style={{display: "flex"}}>
                             <h5>Data visualization</h5>
-                                <Tooltip title="Save image" style={{marginLeft: "auto", marginRight: "6px"}}>
-                                    <Button className="btn-secondary" onClick={this.props.onSaveImageButtonClick}>
-                                        <div className="d-flex py-1">
-                                            <FontAwesomeIcon icon={regular('floppy-disk')}/>
-                                        </div>
-                                    </Button>
-                                </Tooltip>
-                                <Tooltip title="Clear cached data in server">
-                                    <Button className="btn-secondary" onClick={this.onClearCacheButtonClick}>
-                                        <div className="d-flex py-1">
-                                            <FontAwesomeIcon icon={regular('trash-can')}/>
-                                        </div>
-                                    </Button>
-                                </Tooltip>
+                            <Tooltip title="Save image" style={{marginLeft: "auto", marginRight: "6px"}}>
+                                <Button className="btn-secondary" onClick={this.props.onSaveImageButtonClick}>
+                                    <div className="d-flex py-1">
+                                        <FontAwesomeIcon icon={regular('floppy-disk')}/>
+                                    </div>
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Clear cached data in server">
+                                <Button className="btn-secondary" onClick={this.props.onClearCacheButtonClick}>
+                                    <div className="d-flex py-1">
+                                        <FontAwesomeIcon icon={regular('trash-can')}/>
+                                    </div>
+                                </Button>
+                            </Tooltip>
                         </div>
                     </Row>
                     <Row className="d-flex flex-row mt-1" style={{flexGrow:'1', overflowY: "auto", height:"100%"}}>

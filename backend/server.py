@@ -3,8 +3,10 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
-
-from ProjectionInClassifier import ProjectionInClassifier, NewProjectionInClassifierThreadedTrainingTask
+from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
+from models.ProjectionInClassifierModel import ProjectionInClassifierModel
+from models.TabularNCDModel import TabularNCDModel
+from models.TabularNCDThreadedTrainingTask import TabularNCDThreadedTrainingTask
 from sklearn.cluster import KMeans, SpectralClustering
 from flask import Flask, jsonify, request, send_file
 from sklearn.multiclass import OneVsRestClassifier
@@ -21,6 +23,7 @@ import datetime
 import graphviz
 import logging
 import shutil
+import torch
 import json
 import os
 
@@ -332,28 +335,77 @@ def runClustering():
         return send_file(generated_image_filepath, mimetype='image/png')
 
     elif model_name == "tabularncd":
-        print("ToDo tabularncd")
-        tabncd_n_clusters = model_config["tabncd_n_clusters"]
-        tabncd_cosine_topk = model_config["tabncd_cosine_topk"]
-        tabncd_w1 = model_config["tabncd_w1"]
-        tabncd_w2 = model_config["tabncd_w2"]
-        tabncd_classifier_lr = model_config["tabncd_classifier_lr"]
-        tabncd_cluster_lr = model_config["tabncd_cluster_lr"]
-        tabncd_k_neighbors = model_config["tabncd_k_neighbors"]
-        tabncd_dropout = model_config["tabncd_dropout"]
-        tabncd_activation_fct = model_config["tabncd_activation_fct"]
+        # 1) Define the model
+        model = TabularNCDModel(app=app,
+                                encoder_layers_sizes=model_config["tabncd_hidden_layers"],
+                                ssl_layers_sizes=[],
+                                joint_learning_layers_sizes=[],
+                                n_known_classes=len(known_classes),
+                                n_unknown_classes=model_config["tabncd_n_clusters"],
+                                activation_fct=model_config["tabncd_activation_fct"],
+                                encoder_last_activation_fct=None,
+                                ssl_last_activation_fct=None,
+                                joint_last_activation_fct=None,
+                                p_dropout=model_config["tabncd_dropout"])
 
-        clustering_prediction = None
-        full_target_to_plot = None
+        # 2) Define the training datasets
+        known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
 
-        # ToDo implement the TabularNCD clustering model
+        y = np.array(dataset[target_name])
+        mapper, ind = np.unique(y, return_inverse=True)
+        mapping_dict = dict(zip(y, ind))
+        y_mapped = np.array(list(map(mapping_dict.get, y)))
 
-        return jsonify({"error_message": "Model not implemented in the server"}), 422
+        x_full = torch.tensor(filtered_dataset, dtype=torch.float)
+        y_full = np.repeat(-1, len(x_full))
+        y_full[known_mask] = y_mapped[known_mask]
+
+        # So that the classification target labels are in {0; ...; |Cl|+1}
+        y_full_classifier = y_full.astype(np.int64).copy()
+        y_full_classifier[y_full_classifier == -1] = 99999
+        classifier_mapper, classifier_ind = np.unique(y_full_classifier, return_inverse=True)
+        classifier_mapping_dict = dict(zip(y_full_classifier, classifier_ind))
+        y_train_classifier = np.array(list(map(classifier_mapping_dict.get, y_full_classifier)))
+
+        grouped_unknown_class_val = classifier_mapping_dict[99999]
+        print(grouped_unknown_class_val)
+
+        # 3) Start training in a new thread to avoid blocking the server while training the model
+        new_thread = TabularNCDThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes,
+                                                    selected_features, tsne_array, random_state, color_by, model_config,
+                                                    corresponding_tsne_config_name, model,
+                                                    use_unlab=True,
+                                                    use_ssl=True,
+                                                    M=min(2000, sum(known_mask), sum(~known_mask)),
+                                                    lr_classif=model_config["tabncd_classifier_lr"],
+                                                    lr_cluster=model_config["tabncd_cluster_lr"],
+                                                    epochs=30,
+                                                    k_neighbors=model_config["tabncd_k_neighbors"],
+                                                    w1=model_config["tabncd_w1"],
+                                                    w2=model_config["tabncd_w2"],
+                                                    p_m=0.3,
+                                                    alpha=2.0,
+                                                    batch_size=512,
+                                                    x_full=x_full,
+                                                    y_train_classifier=y_train_classifier,
+                                                    grouped_unknown_class_val=grouped_unknown_class_val,
+                                                    cat_columns_indexes=[])
+        new_thread.start()
+        # global running_threads
+        running_threads[new_thread.ident] = new_thread
+
+        return jsonify({"thread_id": new_thread.ident}), 200
 
     elif model_name == 'projection_in_classifier':
-        batch_size = 256
-        num_epochs = 30
+        # 1) Define the model
+        model = ProjectionInClassifierModel(app,
+                                            model_config['projection_in_classifier_architecture'],
+                                            model_config['projection_in_classifier_n_clusters'],
+                                            model_config['projection_in_classifier_dropout'],
+                                            model_config['projection_in_classifier_activation_fct'],
+                                            model_config['projection_in_classifier_lr'])  # We need to save these variables for the next request that will ask to generate the image
 
+        # 2) Define the training datasets
         known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
         x_train = filtered_dataset[known_mask]
         y_train = np.array(dataset[target_name])[known_mask]
@@ -364,20 +416,12 @@ def runClustering():
         y_train_mapped = np.array(list(map(mapping_dict.get, y_train)))
         # y_test_known_mapped = np.array(list(map(mapping_dict.get, y_test_known)))
 
-        model = ProjectionInClassifier(app,
-                                       model_config['projection_in_classifier_architecture'],
-                                       model_config['projection_in_classifier_n_clusters'],
-                                       model_config['projection_in_classifier_dropout'],
-                                       model_config['projection_in_classifier_activation_fct'],
-                                       model_config['projection_in_classifier_lr'],
-                                       x_train, y_train_mapped, batch_size, num_epochs, dataset_name, target_name,
-                                       known_classes, unknown_classes, selected_features, tsne_array, random_state,
-                                       color_by, model_config, corresponding_tsne_config_name)  # We need to save these variables for the next request that will ask to generate the image
-
-        # Start training in a new thread to avoid blocking the server while training the model
-        global running_threads
-        new_thread = NewProjectionInClassifierThreadedTrainingTask(model)
+        # 3) Start training in a new thread to avoid blocking the server while training the model
+        new_thread = ProjectionInClassifierThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array,
+                                                                random_state, color_by, model_config, corresponding_tsne_config_name, model,
+                                                                x_train, y_train_mapped, batch_size=256, num_epochs=30)
         new_thread.start()
+        # global running_threads
         running_threads[new_thread.ident] = new_thread
 
         return jsonify({"thread_id": new_thread.ident}), 200
@@ -617,23 +661,23 @@ def getThreadResults():
     if model_thread.progress_percentage < 100:
         return jsonify({"error_message": "Model still training"}), 422
 
-    dataset_name = model.dataset_name
+    dataset_name = model_thread.dataset_name
     if dataset_name not in session['loaded_datasets'].keys():
         return jsonify({"error_message": "Dataset not loaded"}), 422
     dataset = session['loaded_datasets'].get(dataset_name)
 
-    target_name = model.target_name
-    known_classes = model.known_classes
-    unknown_classes = model.unknown_classes
+    target_name = model_thread.target_name
+    known_classes = model_thread.known_classes
+    unknown_classes = model_thread.unknown_classes
     unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
-    selected_features = model.selected_features
-    model_name = model.name
+    selected_features = model_thread.selected_features
+    model_name = model.model_name
     show_unknown_only = data['show_unknown_only']
-    tsne_array = model.tsne_array
-    random_state = model.random_state
-    color_by = model.color_by
-    model_config = model.model_config
-    corresponding_tsne_config_name = model.corresponding_tsne_config_name
+    tsne_array = model_thread.tsne_array
+    random_state = model_thread.random_state
+    color_by = model_thread.color_by
+    model_config = model_thread.model_config
+    corresponding_tsne_config_name = model_thread.corresponding_tsne_config_name
 
     clustering_prediction = model.predict_new_data(np.array(dataset[selected_features])[unknown_mask])
 

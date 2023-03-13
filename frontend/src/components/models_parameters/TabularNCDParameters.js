@@ -3,14 +3,42 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
-import {Tooltip} from "@mui/material";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
+import {regular, solid} from '@fortawesome/fontawesome-svg-core/import.macro'
+import Button from "react-bootstrap/Button";
+import { styled } from '@mui/material/styles';
+import Tooltip, { tooltipClasses } from '@mui/material/Tooltip';
 
+
+function format_input_output_size(size) {
+    if(size === null) {
+        return "?"
+    } else {
+        return size
+    }
+}
+
+const NoMaxWidthTooltip = styled(({ className, ...props }) => (
+    <Tooltip {...props} classes={{ popper: className }} />
+))({
+    [`& .${tooltipClasses.tooltip}`]: {
+        maxWidth: 'none',
+    },
+});
 
 const TabularNCDParameters = (props) => {
     return (
         <Container>
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <Col className="col-12 d-flex flex-column">
+                    <NoMaxWidthTooltip title={<img src="/TabularNCD_architecture.png" alt="Model architecture" width="700"/>} placement="bottom-end">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            <u>Model architecture help</u>
+                        </div>
+                    </NoMaxWidthTooltip >
+                </Col>
+            </Row>
+
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="The number of unknown classes to predict">
@@ -30,6 +58,7 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
+            {/*
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
@@ -49,6 +78,7 @@ const TabularNCDParameters = (props) => {
                     />
                 </Col>
             </Row>
+            */}
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
@@ -168,7 +198,7 @@ const TabularNCDParameters = (props) => {
                 </Col>
             </Row>
 
-            <Row className="d-flex flex-row">
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-7 d-flex flex-column">
                     <Tooltip title="ToDo tooltip">
                         <div style={{display: "flex", alignItems: "center"}}>
@@ -187,6 +217,210 @@ const TabularNCDParameters = (props) => {
                         <option value="none">None</option>
                     </Form.Select>
                 </Col>
+            </Row>
+
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <div>
+                    <Col className="d-flex flex-column">
+                        <Row>
+                            <div>
+                                Encoder's architecture:
+                            </div>
+                        </Row>
+                        {/* style={{border: "0.5mm solid", borderRadius: "0.375rem", padding: "5px"}} */}
+                        <Row>
+                            <div>
+                                <table className="table" style={{color: "white"}}>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Layer</th>
+                                        <th scope="col">Shape</th>
+                                        <th scope="col">Param #</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td scope="row">Input</td>
+                                        <td>
+                                            <Tooltip title="(number of selected features)">
+                                                <div>
+                                                    ({format_input_output_size(props.n_features_used)})
+                                                </div>
+                                            </Tooltip>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    {props.tabncd_hidden_layers.map((layer_size, layer_index) => (
+                                        <tr key={"hidden_layer_row_" + layer_index}>
+                                            <td scope="row">Dense {layer_index}</td>
+                                            <td>({(layer_index === 0)
+                                                ? format_input_output_size(props.n_features_used)
+                                                : props.tabncd_hidden_layers[layer_index - 1]}, {layer_size})</td>
+                                            <td>{(layer_index === 0)
+                                                ? (props.n_features_used === null)
+                                                    ? '?'
+                                                    : props.n_features_used * layer_size + layer_size
+                                                : props.tabncd_hidden_layers[layer_index - 1] * layer_size + layer_size}</td>
+                                            <td>
+                                                <Button className="btn-secondary"
+                                                        style={{borderRadius: "50px", padding: "3px", paddingRight: "2px", paddingBottom: "1px", paddingTop: "1px"}}
+                                                        onClick={() => props.onTabncdRemoveLayerButtonClick(layer_index)}
+                                                >
+                                                    <div className="d-flex align-items-center">
+                                                        <FontAwesomeIcon icon={solid('minus')}/>
+                                                    </div>
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    <tr>
+                                        <td colSpan="4">
+                                            <center>
+                                                Add layer:
+                                                <input id="tabncdLayerSizeInput"
+                                                       type="number"
+                                                       min={0}
+                                                       placeholder="size"
+                                                       step={1}
+                                                       style={{marginLeft: "5px", marginRight: "5px", maxWidth: "60px"}}
+                                                />
+                                                <Button className="btn-secondary"
+                                                        style={{borderRadius: "50px", padding: "3px", paddingRight: "2px", paddingBottom: "1px", paddingTop: "1px"}}
+                                                        onClick={props.onTabncdAddLayerButtonClick}
+                                                >
+                                                    <div className="d-flex align-items-center">
+                                                        <FontAwesomeIcon icon={solid('plus')}/>
+                                                    </div>
+                                                </Button>
+                                            </center>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Row>
+                    </Col>
+                </div>
+            </Row>
+
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <div>
+                    <Col className="d-flex flex-column">
+                        <Row>
+                            <div>
+                                Clustering layer:
+                            </div>
+                        </Row>
+                        {/* style={{border: "0.5mm solid", borderRadius: "0.375rem", padding: "5px"}} */}
+                        <Row>
+                            <div>
+                                <table className="table" style={{color: "white"}}>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Layer</th>
+                                        <th scope="col">Shape</th>
+                                        <th scope="col">Param #</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td scope="row">Input</td>
+                                        <td>
+                                            <Tooltip title="(Output size of the encoder)">
+                                                <div>
+                                                    ({(props.tabncd_hidden_layers.length > 0)
+                                                    ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
+                                                    : '?'})
+                                                </div>
+                                            </Tooltip>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td scope="row">Output</td>
+                                        <td>
+                                            <Tooltip title="(size last hidden layer, number of known classes)">
+                                                <div>
+                                                    ({(props.tabncd_hidden_layers.length > 0)
+                                                    ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
+                                                    : '?'}, {format_input_output_size(props.tabncd_n_clusters_value)})
+                                                </div>
+                                            </Tooltip>
+                                        </td>
+                                        <td>{(props.tabncd_hidden_layers.length > 0 && props.tabncd_n_clusters_value !== null)
+                                                ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1] * props.tabncd_n_clusters_value + props.tabncd_n_clusters_value
+                                                : '?'}</td>
+                                        <td></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Row>
+                    </Col>
+                </div>
+            </Row>
+
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <div>
+                    <Col className="d-flex flex-column">
+                        <Row>
+                            <div>
+                                Classification layer:
+                            </div>
+                        </Row>
+                        {/* style={{border: "0.5mm solid", borderRadius: "0.375rem", padding: "5px"}} */}
+                        <Row>
+                            <div>
+                                <table className="table" style={{color: "white"}}>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Layer</th>
+                                        <th scope="col">Shape</th>
+                                        <th scope="col">Param #</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td scope="row">Input</td>
+                                        <td>
+                                            <Tooltip title="(Output size of the encoder)">
+                                                <div>
+                                                    ({(props.tabncd_hidden_layers.length > 0)
+                                                    ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
+                                                    : '?'})
+                                                </div>
+                                            </Tooltip>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td scope="row">Output</td>
+                                        <td>
+                                            <Tooltip title="(size last hidden layer, number of known classes)">
+                                                <div>
+                                                    ({(props.tabncd_hidden_layers.length > 0)
+                                                    ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
+                                                    : '?'}, {format_input_output_size(props.n_known_classes)})
+                                                </div>
+                                            </Tooltip>
+                                        </td>
+                                        <td>{(props.tabncd_hidden_layers.length > 0 && props.n_known_classes !== null)
+                                            ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1] * props.n_known_classes + props.n_known_classes
+                                            : '?'}</td>
+                                        <td></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Row>
+                    </Col>
+                </div>
             </Row>
         </Container>
     )
