@@ -97,13 +97,20 @@ def loadResultsDict():
     return results_dict
 
 
-def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only):
+def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only,
+            view_in_encoder=False, model=None, device=None):
     if show_unknown_only is True:
         mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
     else:
         mask = np.repeat(True, len(dataset))
 
     tsne_data = np.array(dataset[selected_features])[mask]
+
+    if view_in_encoder is True:
+        model.eval()
+        with torch.no_grad():
+            tsne_data = np.array(model.encoder_forward(torch.tensor(tsne_data, device=device, dtype=torch.float)).cpu())
+        model.train()
 
     tsne_array = TSNE(n_components=2, perplexity=tsne_perplexity, random_state=tsne_seed).fit_transform(tsne_data)
     tsne_array = pd.DataFrame(tsne_array)
@@ -208,11 +215,11 @@ def getDatasetTSNE():
     # Try to find the configuration in the results_dict
     tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
 
-    if tsne_array is not None:
-        # Try to find if the image was already generated beforehand
-        image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
-        if image_filepath is not None:
-            return send_file(image_filepath, mimetype='image/png')
+    # if tsne_array is not None:
+    #     # Try to find if the image was already generated beforehand
+    #     image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
+    #     if image_filepath is not None:
+    #         return send_file(image_filepath, mimetype='image/png')
 
     # If this configuration wasn't found in the configuration, it needs to be run
     if tsne_array is None:
@@ -285,10 +292,10 @@ def runClustering():
     unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
 
     # Try to find if the image was already generated beforehand
-    if tsne_array is not None:
-        image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
-        if image_filepath is not None:
-            return send_file(image_filepath, mimetype='image/png')
+    # if tsne_array is not None:
+    #     image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
+    #     if image_filepath is not None:
+    #         return send_file(image_filepath, mimetype='image/png')
 
     # If this configuration wasn't found in the configuration, it needs to be run
     if tsne_array is None:
@@ -306,7 +313,7 @@ def runClustering():
         clustering_prediction = kmeans_model.fit_predict(filtered_dataset[unknown_mask])
 
         full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
-        full_target[unknown_mask] = np.array(["Cluster " + str(pred) for pred in clustering_prediction])
+        full_target[unknown_mask] = np.array(["Clust " + str(pred) for pred in clustering_prediction])
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 
@@ -330,7 +337,7 @@ def runClustering():
         clustering_prediction = clustering_prediction.labels_
 
         full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
-        full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+        full_target[unknown_mask] = ["Clust " + str(pred) for pred in clustering_prediction]
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 
@@ -481,7 +488,6 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
         },
         "image_filepath": os.path.join(image_folder_path, image_filename),
     }
-
     saveResultsDict(results_dict)
 
     return os.path.join(image_folder_path, image_filename)
@@ -577,7 +583,7 @@ def runRulesGeneration():
                                             # class_names=['REST', le.inverse_transform(np.unique(label_enc))[elem]],
                                             proportion=False)
 
-            class_or_cluster = "Class" if c in last_clustering_known_classes else "Cluster"
+            class_or_cluster = "Class" if c in last_clustering_known_classes else "Clust"
             dot_data = dot_data[:15] + 'label = "Tree for ' + class_or_cluster + ' ' + str(c) + ".\nWhole model had {:.1f}".format(accuracy_score*100) + '% average train accuracy";\n' + dot_data[15:]
 
             graph = graphviz.Source(dot_data)
@@ -685,11 +691,14 @@ def getThreadResults():
     color_by = model_thread.color_by
     model_config = model_thread.model_config
 
+    view_in_encoder = data['view_in_encoder']
+
     tsne_config = {'selected_features': selected_features,
                    'known_classes': known_classes,
                    'unknown_classes': unknown_classes,
                    'target_name': target_name,
                    'show_unknown_only': show_unknown_only,
+                   'view_in_encoder': view_in_encoder,
                    'tsne_seed': 0,
                    'tsne_perplexity': 30.0}
 
@@ -699,7 +708,7 @@ def getThreadResults():
     if tsne_array is None:
         tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features,
                                                              tsne_config['tsne_seed'], tsne_config['tsne_perplexity'],
-                                                             known_classes, unknown_classes, show_unknown_only)
+                                                             known_classes, unknown_classes, show_unknown_only, view_in_encoder, model, device=model.device)
 
     corresponding_tsne_config_name = model_thread.corresponding_tsne_config_name
 

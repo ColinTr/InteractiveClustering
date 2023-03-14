@@ -37,6 +37,8 @@ class FullPage extends React.Component {
             n_features_used: null,
             n_known_classes: null,
 
+            view_in_encoder_dict: {},
+
             // Default rules generation parameters
             decision_tree_training_mode: "multi_class",
             decision_tree_unknown_classes_only: false,
@@ -305,19 +307,6 @@ class FullPage extends React.Component {
                     })
                 }
             })
-    }
-
-    onProjectionButtonClick = () => {
-        if(this.state.formatted_features == null){
-            fireSwalError("Please load a dataset to visualize")
-        } else {
-            if(this.state.selected_class_feature == null){
-                fireSwalError("Please select a target feature")
-            } else {
-                console.log("ToDo : launch T-SNE of raw data with Flask server...")
-                fireSwalError("Not implemented yet!")
-            }
-        }
     }
 
     onFeatureRadioButtonChange = (feature_name) => {
@@ -636,6 +625,9 @@ class FullPage extends React.Component {
                                     }
                                 }),1000)
 
+                            let view_in_encoder_dict_copy = {...this.state.view_in_encoder_dict}
+                            view_in_encoder_dict_copy[thread_id] = false
+                            this.setState({view_in_encoder_dict: view_in_encoder_dict_copy})
                             // Open the download notification on screen
                             enqueueSnackbar({
                                 anchorOrigin: { vertical: 'bottom', horizontal: 'right', },
@@ -644,7 +636,8 @@ class FullPage extends React.Component {
                                                                              message={message}
                                                                              thread_id={thread_id}
                                                                              refreshIntervalId={refreshIntervalId}
-                                                                             onSeeResultsButtonClick={this.onSeeResultsButtonClick}/>,
+                                                                             onSeeResultsButtonClick={this.onSeeResultsButtonClick}
+                                                                             onViewInEncoderSwitchChange={this.onViewInEncoderSwitchChange}/>,
                             })
                         }))
                     // Other clustering models are fast, so we just wait for the result
@@ -656,6 +649,12 @@ class FullPage extends React.Component {
                     }
                 }
             })
+    }
+
+    onViewInEncoderSwitchChange = (thread_id) => {
+        let view_in_encoder_dict_copy = {...this.state.view_in_encoder_dict}
+        view_in_encoder_dict_copy[thread_id] = !view_in_encoder_dict_copy[thread_id]
+        this.setState({view_in_encoder_dict: view_in_encoder_dict_copy})
     }
 
     onAutoParamsButtonClick = () => {
@@ -721,7 +720,7 @@ class FullPage extends React.Component {
 
     openRulesModal = () => {
         if(this.state.decision_tree_response_pdf_file === null){
-            fireSwalError("No rules to show")
+            fireSwalError("No rules to show", "Please run a clustering before")
         } else {
             window.open(this.state.decision_tree_response_pdf_file)
         }
@@ -790,7 +789,8 @@ class FullPage extends React.Component {
 
             body: JSON.stringify({
                 'thread_id': thread_id,
-                'show_unknown_only': this.state.show_unknown_only
+                'show_unknown_only': this.state.show_unknown_only,
+                'view_in_encoder': this.state.view_in_encoder_dict[thread_id]
             })
         }
         fetch('/getThreadResults', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
@@ -893,7 +893,6 @@ class FullPage extends React.Component {
                     <Row className="my_row mx-lg-1 py-2 d-flex flex-row" style={{flexGrow:'1', height:"100%"}}>
                         <DataVisualization image_to_display={this.state.image_to_display}
                                            onRawDataButtonClick={this.onRawDataButtonClick}
-                                           onProjectionButtonClick={this.onProjectionButtonClick}
 
                                            onShowUnknownOnlySwitchChange={this.onShowUnknownOnlySwitchChange}
                                            show_unknown_only={this.state.show_unknown_only}

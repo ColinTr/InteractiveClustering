@@ -41,9 +41,9 @@ class ModelSelection extends React.Component {
                         <Col className="col-8 d-flex flex-column">
                             <Form.Select aria-label="Default select example" onChange={this.onDropDownChange} className="my-row">
                                 <option value="tabularncd">TabularNCD</option>
+                                <option value="projection_in_classifier">Projection in classifier</option>
                                 <option value="k_means">k-means</option>
                                 <option value="spectral_clustering">Spectral clustering</option>
-                                <option value="projection_in_classifier">Projection in classifier</option>
                             </Form.Select>
                         </Col>
                     </Row>

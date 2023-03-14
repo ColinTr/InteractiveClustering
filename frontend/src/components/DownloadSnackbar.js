@@ -64,12 +64,28 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                         </div>
                     </Row>
                     <Row>
-                        <Col className="col-6 d-flex flex-column align-items-start">
+                        <Col className="col-8 d-flex flex-column justify-content-end" style={{width:"100%"}}>
+                            <div className="form-check form-switch justify-content-end" style={{display: "flex", alignItems: "center", width:"100%"}}>
+                                <input className="form-check-input"
+                                       type="checkbox"
+                                       key="switch_show_unknown_only"
+                                       id="switch_show_unknown_only"
+                                       onChange={() => props.onViewInEncoderSwitchChange(props.thread_id)}
+                                       style={{marginRight: "10px"}}
+                                />
+                                <label className="form-check-label" htmlFor="switch_show_unknown_only">
+                                    View in encoder
+                                </label>
+                            </div>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col className="col-4 d-flex flex-column align-items-start">
                             <button type="button" className="btn btn-danger" onClick={onCancelTrainingButtonClick}>
                                 Cancel
                             </button>
                         </Col>
-                        <Col className="col-6 d-flex flex-column align-items-end">
+                        <Col className="col-8 d-flex flex-column align-items-end">
                             <button type="button" className="btn btn-success" onClick={() => props.onSeeResultsButtonClick(props.thread_id)}>
                                 See results
                             </button>

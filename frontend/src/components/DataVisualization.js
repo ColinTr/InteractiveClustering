@@ -56,23 +56,17 @@ class DataVisualization extends React.Component {
                     </Row>
                     <Row className="d-flex flex-row" style={{paddingLeft: "6px", paddingRight: "6px"}}>
                         <Col className="d-flex flex-column">
-                            <Row className="d-flex flex-row " style={{paddingLeft: "12px"}}>
-                                Get T-SNE of the...
-                            </Row>
                             <Row className="d-flex flex-row">
                                 <div style={{display: "flex"}}>
                                     <Button onClick={() => this.props.onRawDataButtonClick()} style={{marginRight: "10px"}}>
-                                        Raw data
-                                    </Button>
-                                    <Button onClick={() => this.props.onProjectionButtonClick()}>
-                                        Projection
+                                        View data
                                     </Button>
                                 </div>
                             </Row>
                         </Col>
                         <Col className="d-flex flex-column">
                             <Row className="d-flex flex-row" style={{height:"100%"}}>
-                                <div className="form-check form-switch" style={{display: "flex", alignItems: "center"}}>
+                                <div className="form-check form-switch justify-content-end" style={{display: "flex", alignItems: "center"}}>
                                     <input className="form-check-input"
                                            type="checkbox"
                                            key="switch_show_unknown_only"
