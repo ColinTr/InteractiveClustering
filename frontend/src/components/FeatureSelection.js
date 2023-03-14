@@ -26,23 +26,27 @@ class FeatureSelection extends React.Component {
                     {this.props.search_filtered_features_list.map((feature) => (
                         <Row className="d-flex flex-row" key={"row_" + feature.name}>
                             <Col className="d-flex flex-column col-1">
+                                <Form.Check type="checkbox"
+                                            onChange={() => this.props.onChangeCheckbox(feature.index)}
+                                            checked={feature.checked}
+                                            key={"checkbox_" + feature.name}
+                                />
+                            </Col>
+                            <Col className="d-flex flex-column col-10">
                                 <div className="form-check">
                                     <input type="radio"
                                            className="form-check-input"
                                            onChange={() => this.props.onFeatureRadioButtonChange(feature.name)}
                                            name="classFeatureRadio"
                                            key={"class_radio_" + feature.name}
+                                           id={"class_radio_" + feature.name}
+                                           disabled={!feature.checked}
+                                           checked={this.props.selected_class_feature === feature.name}
                                     />
+                                    <label className="form-check-label" htmlFor={"class_radio_" + feature.name}>
+                                        {feature.name}
+                                    </label>
                                 </div>
-                            </Col>
-                            <Col className="d-flex flex-column col-10">
-                                <Form.Check type="checkbox"
-                                            onChange={() => this.props.onChangeCheckbox(feature.index)}
-                                            checked={feature.checked}
-                                            key={"checkbox_" + feature.name}
-                                            disabled={feature.disabled}
-                                            label={feature.name}
-                                />
                             </Col>
                         </Row>
                     ))}
@@ -57,23 +61,36 @@ class FeatureSelection extends React.Component {
         }
     }
 
-    values_list = () => {
+    class_values_list = () => {
         if(this.props.search_filtered_unique_values_list != null) {
             return (
                 <Container>
                     {this.props.search_filtered_unique_values_list.map((feature) => (
-                        <div className="form-check form-switch" key={"div_switch_" + feature.name}>
-                            <input className="form-check-input"
-                                   type="checkbox"
-                                   key={"switch_" + feature.name}
-                                   id={"switch_" + feature.name}
-                                   onChange={() => this.props.onUniqueValueSwitchChange(feature.index)}
-                                   checked={feature.checked}
-                            />
-                            <label className="form-check-label" htmlFor={"switch_" + feature.name}>
-                                {feature.name}
-                            </label>
-                        </div>
+                        <Row className="d-flex flex-row" key={"row_" + feature.name}>
+                            <Col className="d-flex flex-column col-1">
+                                <Form.Check type="checkbox"
+                                            onChange={() => this.props.onChangeClassValueCheckbox(feature.index)}
+                                            checked={feature.used}
+                                            key={"checkbox_" + feature.name}
+                                            disabled={feature.disabled}
+                                />
+                            </Col>
+                            <Col className="d-flex flex-column col-10">
+                                <div className="form-check form-switch" key={"div_switch_" + feature.name}>
+                                    <input className="form-check-input"
+                                           type="checkbox"
+                                           key={"switch_" + feature.name}
+                                           id={"switch_" + feature.name}
+                                           onChange={() => this.props.onUniqueValueSwitchChange(feature.index)}
+                                           checked={feature.checked}
+                                           disabled={!feature.used}
+                                    />
+                                    <label className="form-check-label" htmlFor={"switch_" + feature.name}>
+                                        {feature.name}
+                                    </label>
+                                </div>
+                            </Col>
+                        </Row>
                     ))}
                 </Container>
             )
@@ -194,7 +211,7 @@ class FeatureSelection extends React.Component {
                     </Row>
 
                     <Row className="d-flex flex-row" style={{overflowY: "auto", flex:"1 1 auto", height: '0px'}}>
-                        {this.values_list()}
+                        {this.class_values_list()}
                     </Row>
 
                 </Col>

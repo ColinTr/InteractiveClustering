@@ -1,17 +1,15 @@
 import React from 'react';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import ModelSelection from "./ModelSelection";
-import AgglomerativeClustering from "./AgglomerativeClustering";
-import DataVisualization from "./DataVisualization";
-import DatasetSelector from "./DatasetSelector";
-import FeatureSelection from "./FeatureSelection";
-import fireSwalError from "./swal_functions";
-import RulesGenerator from "./RulesGenerator";
-import RulesDisplayModal from "./RulesDisplayModal";
 import Swal from "sweetalert2";
 import {closeSnackbar, enqueueSnackbar} from 'notistack'
 import DownloadSnackbar from "./DownloadSnackbar";
+import ModelSelection from "./ModelSelection";
+import DataVisualization from "./DataVisualization";
+import DatasetSelector from "./DatasetSelector";
+import FeatureSelection from "./FeatureSelection";
+import RulesGenerator from "./RulesGenerator";
+import fireSwalError from "./swal_functions";
 
 class FullPage extends React.Component {
 
@@ -83,8 +81,51 @@ class FullPage extends React.Component {
         this.state = this.initial_state;
     }
 
+    onFeatureRadioButtonChange = (feature_name) => {
+        // Set the feature checkbox to true and disable it
+        let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
+        this.state.search_filtered_features_list.forEach(feature => {  // For each feature currently displayed...
+            formatted_features[feature.index].disabled = feature.name === feature_name;
+            // if(feature.name === feature_name){
+            //     formatted_features[feature.index].checked = true;
+            // }
+        })
+        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
+        this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
+        this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
+
+        // Send request to the Flask server to display the unique values of this feature
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                'dataset_name': this.state.dataset_name,
+                'feature_name': feature_name})
+        }
+        fetch('/getFeatureUniqueValues', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
+                    })
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.json().then(response => {
+                        this.setState({selected_class_feature: feature_name})
+                        const new_formatted_class_values = response['unique_values'].map((feature, index) => ({"name": feature, "checked": true, "index": index, "used": true}))
+                        this.setState({class_values_to_display: new_formatted_class_values})
+                        this.setState({search_filtered_unique_values_list: this.getUpdatedFilteredList(new_formatted_class_values, this.state.unique_values_search_query)})
+                        this.setState({n_known_classes: this.getNumberOfCheckedValues(new_formatted_class_values)})
+                    })
+                }
+            })
+    }
+
     onNewFeaturesLoaded = (new_features) => {
-        const new_formatted_features = new_features.map((feature, index) => ({"name": feature, "checked" : true, index : index, "disabled": false}))
+        const new_formatted_features = new_features.map((feature, index) => ({"name": feature, "checked": true, "index": index, "disabled": false}))
         this.setState({formatted_features: new_formatted_features})
         this.setState({search_filtered_features_list: this.getUpdatedFilteredList(new_formatted_features, this.state.feature_search_query)})
         this.setState({n_features_used: this.getNumberOfCheckedValues(new_formatted_features)})
@@ -132,9 +173,13 @@ class FullPage extends React.Component {
                         count += 1
                     }
                 }
-            } else {
-                if (feature.checked === true) {
-                    count += 1
+            }
+            // If the feature is not 'used', it means that it is a class value that is unused, and we shouldn't count it
+            if(Object.hasOwn(feature, 'used') === true){
+                if (feature.used === true) {
+                    if (feature.checked === true) {
+                        count += 1
+                    }
                 }
             }
         })
@@ -150,6 +195,13 @@ class FullPage extends React.Component {
         const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
         this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
         this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
+
+        if(formatted_features_item.name === this.state.selected_class_feature){
+            this.setState({selected_class_feature: null})
+            this.setState({class_values_to_display: null})
+            this.setState({search_filtered_unique_values_list: null})
+
+        }
     }
 
     onUniqueValueSwitchChange = i => {
@@ -162,6 +214,19 @@ class FullPage extends React.Component {
         this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
         this.setState({n_known_classes: this.getNumberOfCheckedValues(class_values_to_display)})
     }
+
+    onChangeClassValueCheckbox = i => {
+        let class_values_to_display = [...this.state.class_values_to_display];  // Make a shallow copy
+        let class_values_to_display_item = {...class_values_to_display[i]};  // Get the element we want to update
+        class_values_to_display_item.used = !class_values_to_display_item.used  // Change it
+        class_values_to_display[i] = class_values_to_display_item // Replace it in the array's copy
+
+        const updated_filtered_list = this.getUpdatedFilteredList(class_values_to_display, this.state.unique_values_search_query)
+        this.setState({class_values_to_display: class_values_to_display, search_filtered_unique_values_list: updated_filtered_list})  // And finally replace the array in the state
+        this.setState({n_known_classes: this.getNumberOfCheckedValues(class_values_to_display)})
+    }
+
+
 
     onSwitchAllOnButtonClick = () => {
         if (this.state.class_values_to_display != null) {
@@ -235,7 +300,7 @@ class FullPage extends React.Component {
     getKnownClassesFormattedList = () => {
         const known_classes = []
         this.state.class_values_to_display.forEach(unique_value => {
-            if(unique_value.checked === true){
+            if(unique_value.checked === true && unique_value.used === true){
                 known_classes.push(unique_value.name)
             }
         })
@@ -245,7 +310,7 @@ class FullPage extends React.Component {
     getUnknownClassesFormattedList = () => {
         const unknown_classes = []
         this.state.class_values_to_display.forEach(unique_value => {
-            if(unique_value.checked === false){
+            if(unique_value.checked === false && unique_value.used === true){
                 unknown_classes.push(unique_value.name)
             }
         })
@@ -304,46 +369,6 @@ class FullPage extends React.Component {
                     serverPromise.blob().then(image_response_blob => {
                         const imageObjectURL = URL.createObjectURL(image_response_blob);
                         this.setState({image_to_display: imageObjectURL})
-                    })
-                }
-            })
-    }
-
-    onFeatureRadioButtonChange = (feature_name) => {
-        // Set the feature checkbox to true and disable it
-        let formatted_features = [...this.state.formatted_features];  // Make a shallow copy
-        this.state.search_filtered_features_list.forEach(feature => {  // For each feature currently displayed...
-            formatted_features[feature.index].disabled = feature.name === feature_name;
-        })
-        const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
-        this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-        this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
-
-        // Send request to the Flask server to display the unique values of this feature
-        const requestOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                'dataset_name': this.state.dataset_name,
-                'feature_name': feature_name})
-        }
-        fetch('/getFeatureUniqueValues', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
-            .then(serverPromise => {
-                if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
-                }
-                if (serverPromise.status === 422) {
-                    serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
-                    })
-                }
-                if (serverPromise.status === 200) {
-                    serverPromise.json().then(response => {
-                        this.setState({selected_class_feature: feature_name})
-                        const new_formatted_class_values = response['unique_values'].map((feature, index) => ({"name": feature, "checked" : true, index : index}))
-                        this.setState({class_values_to_display: new_formatted_class_values})
-                        this.setState({search_filtered_unique_values_list: this.getUpdatedFilteredList(new_formatted_class_values, this.state.unique_values_search_query)})
-                        this.setState({n_known_classes: this.getNumberOfCheckedValues(new_formatted_class_values)})
                     })
                 }
             })
@@ -488,6 +513,10 @@ class FullPage extends React.Component {
         }
         if(this.getUnknownClassesFormattedList().length === 0){
             fireSwalError("Cannot run clustering", "There are no unknown classes selected")
+            return
+        }
+        if((this.state.selected_model === "projection_in_classifier" || this.state.selected_model === "tabularncd") && this.getKnownClassesFormattedList().length === 0){
+            fireSwalError("Cannot run clustering", "There are no known classes selected")
             return
         }
         if(this.state.selected_model === "projection_in_classifier"){
@@ -849,7 +878,8 @@ class FullPage extends React.Component {
 
     render() {
         return (
-            <Row style={{height: '100vh', width:"99vw"}} className="d-flex flex-row justify-content-center align-items-center">
+            <Row style={{height: '100%', width:"99%"}} className="d-flex flex-row justify-content-center align-items-center">
+                {/*
                 <RulesDisplayModal rules_modal_is_open={this.state.rules_modal_is_open}
                                    openRulesModal={this.openRulesModal}
                                    closeRulesModal={this.closeRulesModal}
@@ -858,18 +888,20 @@ class FullPage extends React.Component {
                                    decision_tree_response_accuracy_score={this.state.decision_tree_response_accuracy_score}
                                    decision_tree_response_pdf_file={this.state.decision_tree_response_pdf_file}
                 />
+                */}
 
-                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "99vh"}}>
+                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "98%"}}>
                     <Row className="my_row py-2">
                         <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
                                          setDatasetNameHandler={this.setDatasetNameHandler}
                                          unloadDatasetHandler={this.unloadDatasetHandler}
                         />
                     </Row>
-                    <Row className="my_row py-2" style={{flexGrow:'1'}}>
+                    <Row className="my_row mb-lg-0 py-2" style={{flexGrow:'1'}}>
                         <FeatureSelection feature_search_query={this.state.feature_search_query}
                                           onChangeFeaturesSearch={this.onChangeFeaturesSearch}
                                           search_filtered_features_list={this.state.search_filtered_features_list}
+                                          selected_class_feature={this.state.selected_class_feature}
 
                                           onClearFeaturesSearchButtonClick={this.onClearFeaturesSearchButtonClick}
                                           onCheckAllButtonClick={this.onCheckAllButtonClick}
@@ -885,12 +917,13 @@ class FullPage extends React.Component {
                                           onSwitchAllOnButtonClick={this.onSwitchAllOnButtonClick}
                                           onSwitchAllOffButtonClick={this.onSwitchAllOffButtonClick}
                                           onUniqueValueSwitchChange={this.onUniqueValueSwitchChange}
+                                          onChangeClassValueCheckbox={this.onChangeClassValueCheckbox}
                         />
                     </Row>
                 </Col>
 
-                <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "99vh"}}>
-                    <Row className="my_row mx-lg-1 py-2 d-flex flex-row" style={{flexGrow:'1', height:"100%"}}>
+                <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "98%"}}>
+                    <Row className="my_row mx-lg-0 mb-lg-0 py-2 d-flex flex-row" style={{flexGrow:'1', height:"100%"}}>
                         <DataVisualization image_to_display={this.state.image_to_display}
                                            onRawDataButtonClick={this.onRawDataButtonClick}
 
@@ -903,7 +936,7 @@ class FullPage extends React.Component {
                     </Row>
                 </Col>
 
-                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "99vh"}}>
+                <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "98%"}}>
                     <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
                         <ModelSelection onRunModelButtonClick={this.onRunModelButtonClick}
                                         onAutoParamsButtonClick={this.onAutoParamsButtonClick}
@@ -954,7 +987,7 @@ class FullPage extends React.Component {
                                         onProjectionInClassifierRemoveLayerButtonClick = {this.onProjectionInClassifierRemoveLayerButtonClick}
                         />
                     </Row>
-                    <Row className="my_row py-2 d-flex flex-row">
+                    <Row className="my_row mb-lg-0 py-2 d-flex flex-row">
                         <RulesGenerator onDecisionTreeRadioButtonChange={this.onDecisionTreeRadioButtonChange}
                                         decision_tree_training_mode={this.state.decision_tree_training_mode}
 
@@ -973,10 +1006,12 @@ class FullPage extends React.Component {
                                         onShowRulesButtonClick={this.onShowRulesButtonClick}
                         />
                     </Row>
+                    {/*
                     <Row className="my_row py-2 d-flex flex-row">
                         <AgglomerativeClustering onAgglomerativeClusteringRunButtonClick={this.onAgglomerativeClusteringRunButtonClick}
                                                  onAgglomerativeClusteringUpdateRulesButtonClick={this.onAgglomerativeClusteringUpdateRulesButtonClick}/>
                     </Row>
+                    */}
                 </Col>
 
             </Row>

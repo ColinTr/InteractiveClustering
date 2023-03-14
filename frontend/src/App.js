@@ -7,7 +7,7 @@ document.body.style.backgroundColor = "#22223b";
 
 function App() {
   return (
-    <div className="App">
+    <div className="App d-flex justify-content-center align-items-center" style={{height: "100vh"}}>
         <SnackbarProvider />
         <FullPage />
     </div>
