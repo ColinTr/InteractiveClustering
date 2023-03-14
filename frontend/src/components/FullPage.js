@@ -147,7 +147,7 @@ class FullPage extends React.Component {
 
         const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
         this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-        this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
+        this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
     }
 
     onUniqueValueSwitchChange = i => {
@@ -194,7 +194,7 @@ class FullPage extends React.Component {
             })
             const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
             this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-            this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
+            this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
         }
     }
 
@@ -206,7 +206,7 @@ class FullPage extends React.Component {
             })
             const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
             this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-            this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
+            this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
         }
     }
 
@@ -328,7 +328,7 @@ class FullPage extends React.Component {
         })
         const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
         this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
-        this.setState({n_features_used: this.getNumberOfCheckedValues(updated_filtered_list)})
+        this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
 
         // Send request to the Flask server to display the unique values of this feature
         const requestOptions = {
@@ -530,7 +530,9 @@ class FullPage extends React.Component {
                 'tabncd_k_neighbors': parseInt(this.state.model_tabncd_k_neighbors),
                 'tabncd_dropout': parseFloat(this.state.model_tabncd_dropout),
                 'tabncd_activation_fct': this.state.model_tabncd_activation_fct,
-                'tabncd_hidden_layers': this.state.model_tabncd_hidden_layers
+                'tabncd_hidden_layers':  Array.prototype.concat(
+                    this.state.n_features_used,
+                    this.state.model_tabncd_hidden_layers)
             }
         }
         else if(this.state.selected_model === "k_means"){
@@ -603,8 +605,8 @@ class FullPage extends React.Component {
                     })
                 }
                 if (serverPromise.status === 200) {
-                    // This model takes time to train, so we only get the background thread ID to update a progress bar
-                    if(this.state.selected_model === "projection_in_classifier"){
+                    // These models take time to train, so we only get the background thread ID to update a progress bar
+                    if(this.state.selected_model === "projection_in_classifier" || this.state.selected_model === "tabularncd"){
                         serverPromise.json().then((server_response => {
                             const thread_id = server_response["thread_id"]
 
@@ -669,7 +671,7 @@ class FullPage extends React.Component {
     }
 
     updateSelectedModel = (model_name) => {
-        this.setState({ model_selected_model: model_name })
+        this.setState({ selected_model: model_name })
     }
 
     on_kmeans_n_clusters_change = (event) => {
@@ -914,7 +916,6 @@ class FullPage extends React.Component {
                         <ModelSelection onRunModelButtonClick={this.onRunModelButtonClick}
                                         onAutoParamsButtonClick={this.onAutoParamsButtonClick}
                                         updateSelectedModel={this.updateSelectedModel}
-                                        model_params_selected_model={this.state.selected_model}
 
                                         n_features_used={this.state.n_features_used}
                                         n_known_classes={this.state.n_known_classes}

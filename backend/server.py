@@ -3,6 +3,7 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
+import utils
 from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
 from models.ProjectionInClassifierModel import ProjectionInClassifierModel
 from models.TabularNCDModel import TabularNCDModel
@@ -35,6 +36,8 @@ logging.basicConfig(level=logging.DEBUG)
 # Session(app)
 CORS(app)
 
+USE_CUDA = True
+
 # Global dict for storing data in between requests
 # /!\ DO NOT USE IF THE SERVER IS DEPLOYED IN PRODUCTION /!\
 session = {"loaded_datasets": {}}
@@ -57,6 +60,10 @@ def getFileHeader():
     data = request.get_json()
     file_path = os.path.join('..', 'datasets', data['selected_file_path'])
     dataset = pd.read_csv(file_path)
+
+    # Shuffle the dataset
+    dataset = dataset.sample(frac=1, random_state=0).reset_index(drop=True)
+
     session['loaded_datasets'][data['dataset_name']] = dataset  # dataset.to_json()
     columns_names = dataset.columns
 
@@ -194,8 +201,7 @@ def getDatasetTSNE():
         unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
     else:
         unknown_mask = np.repeat(True, len(dataset))
-    tsne_target = np.array(dataset[target_name])[unknown_mask]
-    tsne_target = [target if target in known_classes else "Unknown" for target in tsne_target]
+    tsne_target = ["Class " + str(target) if target in known_classes else "Unknown" for target in np.array(dataset[target_name])[unknown_mask]]
 
     results_dict = loadResultsDict()
 
@@ -299,8 +305,8 @@ def runClustering():
         # We train only on the unknown data
         clustering_prediction = kmeans_model.fit_predict(filtered_dataset[unknown_mask])
 
-        full_target = np.array(dataset[target_name])
-        full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+        full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
+        full_target[unknown_mask] = np.array(["Cluster " + str(pred) for pred in clustering_prediction])
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 
@@ -323,7 +329,7 @@ def runClustering():
         clustering_prediction = spectral_clustering_model.fit(filtered_dataset[unknown_mask])
         clustering_prediction = clustering_prediction.labels_
 
-        full_target = np.array(dataset[target_name])
+        full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
         full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
@@ -340,13 +346,14 @@ def runClustering():
                                 encoder_layers_sizes=model_config["tabncd_hidden_layers"],
                                 ssl_layers_sizes=[],
                                 joint_learning_layers_sizes=[],
-                                n_known_classes=len(known_classes),
+                                n_known_classes=len(known_classes) + 1,
                                 n_unknown_classes=model_config["tabncd_n_clusters"],
                                 activation_fct=model_config["tabncd_activation_fct"],
                                 encoder_last_activation_fct=None,
                                 ssl_last_activation_fct=None,
                                 joint_last_activation_fct=None,
-                                p_dropout=model_config["tabncd_dropout"])
+                                p_dropout=model_config["tabncd_dropout"],
+                                USE_CUDA=USE_CUDA)
 
         # 2) Define the training datasets
         known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
@@ -356,7 +363,8 @@ def runClustering():
         mapping_dict = dict(zip(y, ind))
         y_mapped = np.array(list(map(mapping_dict.get, y)))
 
-        x_full = torch.tensor(filtered_dataset, dtype=torch.float)
+        device = utils.setup_device(app, use_cuda=USE_CUDA)
+        x_full = torch.tensor(filtered_dataset, dtype=torch.float, device=device)
         y_full = np.repeat(-1, len(x_full))
         y_full[known_mask] = y_mapped[known_mask]
 
@@ -368,14 +376,13 @@ def runClustering():
         y_train_classifier = np.array(list(map(classifier_mapping_dict.get, y_full_classifier)))
 
         grouped_unknown_class_val = classifier_mapping_dict[99999]
-        print(grouped_unknown_class_val)
 
         # 3) Start training in a new thread to avoid blocking the server while training the model
         new_thread = TabularNCDThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes,
                                                     selected_features, tsne_array, random_state, color_by, model_config,
                                                     corresponding_tsne_config_name, model,
                                                     use_unlab=True,
-                                                    use_ssl=True,
+                                                    use_ssl=False,
                                                     M=min(2000, sum(known_mask), sum(~known_mask)),
                                                     lr_classif=model_config["tabncd_classifier_lr"],
                                                     lr_cluster=model_config["tabncd_cluster_lr"],
@@ -403,7 +410,8 @@ def runClustering():
                                             model_config['projection_in_classifier_n_clusters'],
                                             model_config['projection_in_classifier_dropout'],
                                             model_config['projection_in_classifier_activation_fct'],
-                                            model_config['projection_in_classifier_lr'])  # We need to save these variables for the next request that will ask to generate the image
+                                            model_config['projection_in_classifier_lr'],
+                                            USE_CUDA)
 
         # 2) Define the training datasets
         known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
@@ -681,8 +689,8 @@ def getThreadResults():
 
     clustering_prediction = model.predict_new_data(np.array(dataset[selected_features])[unknown_mask])
 
-    full_target = np.array(dataset[target_name])
-    full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
+    full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
+    full_target[unknown_mask] = np.array(["Clust " + str(pred) for pred in clustering_prediction])
 
     saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 

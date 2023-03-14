@@ -9,7 +9,7 @@ from utils import *
 class TabularNCDModel(nn.Module):
     def __init__(self, encoder_layers_sizes, ssl_layers_sizes, joint_learning_layers_sizes,
                  n_known_classes, n_unknown_classes, activation_fct, encoder_last_activation_fct,
-                 ssl_last_activation_fct, joint_last_activation_fct, p_dropout, app):
+                 ssl_last_activation_fct, joint_last_activation_fct, p_dropout, app, USE_CUDA):
         """
         The TabularNCD model object. It is composed of 5 main networks : The *encoder*, for SSL the *mask_vector_estimator*
         and *feature_vector_estimator* and for the joint learning the *classification_head* and *clustering_head*.
@@ -27,7 +27,7 @@ class TabularNCDModel(nn.Module):
         super(TabularNCDModel, self).__init__()
 
         self.app = app
-        self.device = setup_device(app, use_cuda=True)
+        self.device = setup_device(app, use_cuda=USE_CUDA)
 
         self.model_name = "tabularncd"
 
@@ -119,3 +119,22 @@ class TabularNCDModel(nn.Module):
         mask_pred = self.mask_vector_estimator(encoded_x)
         feature_pred = self.feature_vector_estimator(encoded_x)
         return mask_pred, feature_pred
+
+    def predict_new_data(self, new_data):
+        self.eval()
+
+        with torch.no_grad():
+
+            new_data = torch.tensor(new_data, device=self.device, dtype=torch.float)
+
+            projected_new_data = self.clustering_head_forward(self.encoder_forward(new_data))
+
+            projected_new_data = F.softmax(projected_new_data, -1)
+
+            clustering_prediction = projected_new_data.argmax(dim=1)
+
+            clustering_prediction = np.array(clustering_prediction.cpu())
+
+        self.train()
+
+        return clustering_prediction

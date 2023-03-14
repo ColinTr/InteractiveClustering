@@ -12,7 +12,7 @@ import torch
 
 
 class ProjectionInClassifierModel(nn.Module):
-    def __init__(self, app, layers_sizes, n_clusters, p_dropout, activation_fct, learning_rate):
+    def __init__(self, app, layers_sizes, n_clusters, p_dropout, activation_fct, learning_rate, USE_CUDA):
         super(ProjectionInClassifierModel, self).__init__()
 
         # Architecture
@@ -32,7 +32,7 @@ class ProjectionInClassifierModel(nn.Module):
         self.app = app
         self.learning_rate = learning_rate
         self.n_clusters = n_clusters
-        self.device = utils.setup_device(app, use_cuda=True)
+        self.device = utils.setup_device(app, use_cuda=USE_CUDA)
         self.to(self.device)
         self.model_name = "projection_in_classifier"
 

@@ -35,7 +35,6 @@ class ProjectionInClassifierThreadedTrainingTask(ThreadedTrainingTask):
         }
 
         n_batchs = math.ceil((self.x_train.shape[0]) / self.batch_size)
-
         n_current_training_step = 0
         n_total_training_step = n_batchs * self.num_epochs
 
