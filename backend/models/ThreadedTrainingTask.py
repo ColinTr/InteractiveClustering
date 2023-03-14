@@ -13,7 +13,7 @@ class KilledException(Exception):
 
 
 class ThreadedTrainingTask(threading.Thread):
-    def __init__(self, app, dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name, model_name):
+    def __init__(self, app, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, model_name):
         super().__init__()
 
         # Variables for image generation and server requests
@@ -24,7 +24,6 @@ class ThreadedTrainingTask(threading.Thread):
         self.known_classes = known_classes
         self.unknown_classes = unknown_classes
         self.selected_features = selected_features
-        self.tsne_array = tsne_array
         self.random_state = random_state
         self.color_by = color_by
         self.model_config = model_config

@@ -470,14 +470,7 @@ class FullPage extends React.Component {
     }
 
     onShowUnknownOnlySwitchChange = () => {
-        const new_show_unknown_only_value = !this.state.show_unknown_only
-        this.setState({show_unknown_only: new_show_unknown_only_value})
-
-        if(new_show_unknown_only_value === true){
-            console.log("ToDo update the current image to show only the unknown classes")
-        } else {
-            console.log("ToDo update the current image to display all the classes")
-        }
+        this.setState({show_unknown_only: !this.state.show_unknown_only})
     }
 
     onAgglomerativeClusteringRunButtonClick = (agglomerative_clustering_value) => {

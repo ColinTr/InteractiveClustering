@@ -379,7 +379,7 @@ def runClustering():
 
         # 3) Start training in a new thread to avoid blocking the server while training the model
         new_thread = TabularNCDThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes,
-                                                    selected_features, tsne_array, random_state, color_by, model_config,
+                                                    selected_features, random_state, color_by, model_config,
                                                     corresponding_tsne_config_name, model,
                                                     use_unlab=True,
                                                     use_ssl=False,
@@ -425,7 +425,7 @@ def runClustering():
         # y_test_known_mapped = np.array(list(map(mapping_dict.get, y_test_known)))
 
         # 3) Start training in a new thread to avoid blocking the server while training the model
-        new_thread = ProjectionInClassifierThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array,
+        new_thread = ProjectionInClassifierThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes, selected_features,
                                                                 random_state, color_by, model_config, corresponding_tsne_config_name, model,
                                                                 x_train, y_train_mapped, batch_size=256, num_epochs=30)
         new_thread.start()
@@ -681,10 +681,26 @@ def getThreadResults():
     selected_features = model_thread.selected_features
     model_name = model.model_name
     show_unknown_only = data['show_unknown_only']
-    tsne_array = model_thread.tsne_array
     random_state = model_thread.random_state
     color_by = model_thread.color_by
     model_config = model_thread.model_config
+
+    tsne_config = {'selected_features': selected_features,
+                   'known_classes': known_classes,
+                   'unknown_classes': unknown_classes,
+                   'target_name': target_name,
+                   'show_unknown_only': show_unknown_only,
+                   'tsne_seed': 0,
+                   'tsne_perplexity': 30.0}
+
+    # Try to find the tsne configuration in the results_dict
+    results_dict = loadResultsDict()
+    tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
+    if tsne_array is None:
+        tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features,
+                                                             tsne_config['tsne_seed'], tsne_config['tsne_perplexity'],
+                                                             known_classes, unknown_classes, show_unknown_only)
+
     corresponding_tsne_config_name = model_thread.corresponding_tsne_config_name
 
     clustering_prediction = model.predict_new_data(np.array(dataset[selected_features])[unknown_mask])

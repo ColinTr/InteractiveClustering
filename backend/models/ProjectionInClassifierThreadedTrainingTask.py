@@ -13,8 +13,8 @@ import math
 
 
 class ProjectionInClassifierThreadedTrainingTask(ThreadedTrainingTask):
-    def __init__(self, dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name, ProjectionInClassifierModelToTrain, x_train, y_train, batch_size, num_epochs):
-        super().__init__(ProjectionInClassifierModelToTrain.app, dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name, ProjectionInClassifierModelToTrain.model_name)
+    def __init__(self, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, ProjectionInClassifierModelToTrain, x_train, y_train, batch_size, num_epochs):
+        super().__init__(ProjectionInClassifierModelToTrain.app, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, ProjectionInClassifierModelToTrain.model_name)
         self.model_to_train = ProjectionInClassifierModelToTrain
         self.x_train = torch.tensor(x_train, device=ProjectionInClassifierModelToTrain.device, dtype=torch.float)
         self.y_train = y_train

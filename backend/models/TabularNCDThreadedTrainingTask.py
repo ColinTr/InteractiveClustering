@@ -11,9 +11,9 @@ import threading
 
 
 class TabularNCDThreadedTrainingTask(ThreadedTrainingTask):
-    def __init__(self, dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name, TabularNCDModelToTrain,
+    def __init__(self, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, TabularNCDModelToTrain,
                  use_unlab, use_ssl, M, lr_classif, lr_cluster, epochs, k_neighbors, w1, w2, p_m, alpha, batch_size, x_full, y_train_classifier, grouped_unknown_class_val, cat_columns_indexes):
-        super().__init__(TabularNCDModelToTrain.app, dataset_name, target_name, known_classes, unknown_classes, selected_features, tsne_array, random_state, color_by, model_config, corresponding_tsne_config_name, TabularNCDModelToTrain.model_name)
+        super().__init__(TabularNCDModelToTrain.app, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, TabularNCDModelToTrain.model_name)
         self.app = TabularNCDModelToTrain.app
         self.model_to_train = TabularNCDModelToTrain
         self.use_unlab = use_unlab  # Boolean
