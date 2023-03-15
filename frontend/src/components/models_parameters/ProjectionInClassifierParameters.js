@@ -7,6 +7,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { regular, solid } from '@fortawesome/fontawesome-svg-core/import.macro'
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import {styled} from "@mui/material/styles";
+import {tooltipClasses} from "@mui/material/Tooltip";
 
 
 function format_input_output_size(size) {
@@ -17,9 +19,27 @@ function format_input_output_size(size) {
     }
 }
 
+const NoMaxWidthTooltip = styled(({ className, ...props }) => (
+    <Tooltip {...props} classes={{ popper: className }} />
+))({
+    [`& .${tooltipClasses.tooltip}`]: {
+        maxWidth: 'none',
+    },
+});
+
 const ProjectionInClassifierParameters = (props) => {
     return (
         <Container>
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <Col className="col-12 d-flex flex-column">
+                    <NoMaxWidthTooltip title={<img src="/ProjectionInClassifier_architecture.png" alt="Model architecture" width="600"/>} placement="bottom-end">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            <u>Model architecture help</u>
+                        </div>
+                    </NoMaxWidthTooltip >
+                </Col>
+            </Row>
+
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
                     <Tooltip title="The number of clusters used in the k-means after projection.">
@@ -41,7 +61,7 @@ const ProjectionInClassifierParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The probability of dropping neurons during training for regularization">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Dropout <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -61,7 +81,7 @@ const ProjectionInClassifierParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The step size at each iteration while moving toward the minimum of the loss function">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Learning rate <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -81,7 +101,7 @@ const ProjectionInClassifierParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-7 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The activation function used between the hidden layers">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Activation function <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>

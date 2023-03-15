@@ -31,6 +31,8 @@ class ThreadedTrainingTask(threading.Thread):
 
         self.model_to_train = None
 
+        self.error_message = None
+
         # Event that will be set when .stop() is called on this thread
         self._stop_event = threading.Event()
 

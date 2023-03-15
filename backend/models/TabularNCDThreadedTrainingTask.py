@@ -3,7 +3,8 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
-import torch
+import gc
+
 from models.ThreadedTrainingTask import ThreadedTrainingTask, KilledException
 from ncl_memory_module import NCLMemoryModule
 from utils import *
@@ -286,8 +287,15 @@ class TabularNCDThreadedTrainingTask(ThreadedTrainingTask):
             # ==================================================================
 
         except KilledException:
-            print("Training thread stopping...")
-            # ToDo optional cleanup
+            self.app.logger.debug("Thread received KilledException, stopping training...")
+            torch.cuda.empty_cache()
+            gc.collect()
+
+        except RuntimeError as err:
+            self.app.logger.debug(err)
+            self.error_message = err.args[0]
+            torch.cuda.empty_cache()
+            gc.collect()
 
         torch.cuda.empty_cache()  # Free some memory up
 

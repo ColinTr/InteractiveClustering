@@ -3,6 +3,8 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
+import gc
+
 import utils
 from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
 from models.ProjectionInClassifierModel import ProjectionInClassifierModel
@@ -654,6 +656,13 @@ def getThreadProgress():
     if data["thread_id"] not in running_threads.keys():
         return jsonify({"error_message": "thread not running"}), 422
 
+    error_message = running_threads[data["thread_id"]].error_message
+    if error_message is not None:
+        del running_threads[data["thread_id"]]
+        torch.cuda.empty_cache()
+        gc.collect()
+        return jsonify({"error_message": error_message}), 422
+
     return jsonify({"thread_progress": running_threads[data["thread_id"]].progress_percentage}), 200
 
 
@@ -665,6 +674,8 @@ def cancelTrainingThread():
 
     running_threads[data["thread_id"]].stop()
     del running_threads[data["thread_id"]]
+    torch.cuda.empty_cache()
+    gc.collect()
     return "success", 200
 
 

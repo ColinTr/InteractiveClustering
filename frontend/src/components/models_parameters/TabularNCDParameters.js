@@ -41,7 +41,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The number of unknown classes to predict">
+                    <Tooltip title="The number of clusters to form">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Number of clusters <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -61,7 +61,7 @@ const TabularNCDParameters = (props) => {
             {/*
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The percentage of the maximum number of pairs in a mini-batch that are considered positive">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Cosine Top k (in %) <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -82,7 +82,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The classification network trade-off parameter">
                         <div style={{display: "flex", alignItems: "center"}}>
                             w1 <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -102,7 +102,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The clustering network trade-off parameter">
                         <div style={{display: "flex", alignItems: "center"}}>
                             w2 <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/></div>
                     </Tooltip>
@@ -121,7 +121,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The step size at each iteration of the loss of the classification network">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Classif. lr <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -141,7 +141,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The step size at each iteration of the loss of the clustering network">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Clust. lr <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -161,7 +161,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The number of neighbors to consider in the data augmentation method">
                         <div style={{display: "flex", alignItems: "center"}}>
                             k neighbors <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -180,7 +180,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The probability of dropping neurons during training for regularization">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Dropout <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -200,7 +200,7 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-7 d-flex flex-column">
-                    <Tooltip title="ToDo tooltip">
+                    <Tooltip title="The activation function used between the hidden layers">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Activation function <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -343,7 +343,7 @@ const TabularNCDParameters = (props) => {
                                     <tr>
                                         <td scope="row">Output</td>
                                         <td>
-                                            <Tooltip title="(size last hidden layer, number of known classes)">
+                                            <Tooltip title="(size last hidden layer, number of clusters)">
                                                 <div>
                                                     ({(props.tabncd_hidden_layers.length > 0)
                                                     ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]

@@ -36,6 +36,7 @@ class FullPage extends React.Component {
             n_known_classes: null,
 
             view_in_encoder_dict: {},
+            estimated_times_to_train: {},
 
             // Default rules generation parameters
             decision_tree_training_mode: "multi_class",
@@ -497,6 +498,38 @@ class FullPage extends React.Component {
         console.log("ToDo update the rules based on the result of the agglomerative clustering")
     }
 
+    updateTimeEstimationDict = (thread_id, new_progress_value) => {
+        let estimated_times_to_train_copy = {...this.state.estimated_times_to_train}
+
+        if(estimated_times_to_train_copy[thread_id] === undefined){
+            estimated_times_to_train_copy[thread_id] = {'previous_values': [0], 'estimated_remaining_time': null}
+        }
+
+        estimated_times_to_train_copy[thread_id]['previous_values'].push(new_progress_value)
+
+        if(estimated_times_to_train_copy[thread_id]['previous_values'].length < 2 || [...new Set(estimated_times_to_train_copy[thread_id]['previous_values'])] === [0]){
+            estimated_times_to_train_copy[thread_id]['estimated_remaining_time'] = '...'
+        } else {
+            let average_progress_per_second = 0
+            for (let i = 1; i < estimated_times_to_train_copy[thread_id]['previous_values'].length; i++) {
+                average_progress_per_second = average_progress_per_second + (estimated_times_to_train_copy[thread_id]['previous_values'][i] - estimated_times_to_train_copy[thread_id]['previous_values'][i - 1])
+            }
+            average_progress_per_second = average_progress_per_second / estimated_times_to_train_copy[thread_id]['previous_values'].length
+
+            const last_progress_value = estimated_times_to_train_copy[thread_id]['previous_values'][estimated_times_to_train_copy[thread_id]['previous_values'].length - 1]
+
+            const estimated_remaining_time = (100 - last_progress_value) / average_progress_per_second
+
+            if(estimated_remaining_time === Infinity){
+                estimated_times_to_train_copy[thread_id]['estimated_remaining_time'] = '...'
+            } else {
+                estimated_times_to_train_copy[thread_id]['estimated_remaining_time'] = estimated_remaining_time
+            }
+        }
+
+        return estimated_times_to_train_copy
+    }
+
     onRunModelButtonClick = () => {
         // Sanity checks:
         if(this.state.formatted_features == null){
@@ -621,7 +654,7 @@ class FullPage extends React.Component {
                         serverPromise.json().then((server_response => {
                             const thread_id = server_response["thread_id"]
 
-                            // Periodically request the backend for the training progress
+                            // Periodically request the backend during the training progress
                             const checkProgressRequestOptions = {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -643,6 +676,31 @@ class FullPage extends React.Component {
                                         progressServerPromise.json().then(json_response => {
                                             const progress_value = json_response["thread_progress"]
                                             this.setState({model_projection_in_classifier_training_progress: progress_value})
+
+                                            const estimated_times_to_train_copy = this.updateTimeEstimationDict(thread_id, progress_value)
+                                            this.setState({estimated_times_to_train: estimated_times_to_train_copy})
+
+                                            const thread_estimated_remaining_time = estimated_times_to_train_copy[thread_id]['estimated_remaining_time']
+
+                                            let formatted_remaining_time = ""
+                                            if(thread_estimated_remaining_time === "..."){
+                                                formatted_remaining_time = "..."
+                                            } else {
+                                                const hours = Math.floor(thread_estimated_remaining_time / (60 * 60))
+                                                const minutes = Math.floor(thread_estimated_remaining_time / 60)
+                                                const seconds = Math.round(Math.floor(thread_estimated_remaining_time % 60))
+
+                                                if(hours !== 0){
+                                                    if (hours.toString().length === 1) { formatted_remaining_time += "0" + hours + ":" }
+                                                    else { formatted_remaining_time += hours + ":" }
+                                                }
+                                                if (minutes.toString().length === 1) { formatted_remaining_time += "0" + minutes + ":" }
+                                                else { formatted_remaining_time += minutes + ":" }
+                                                if (seconds.toString().length === 1) { formatted_remaining_time += "0" + seconds }
+                                                else { formatted_remaining_time += seconds }
+                                            }
+
+                                            document.getElementById("time_estimation_thread_" + thread_id).innerHTML = "Remaining time: " + formatted_remaining_time
                                             document.getElementById("pb_thread_" + thread_id).setAttribute('aria-valuenow', progress_value)
                                             document.getElementById("pb_thread_" + thread_id).setAttribute('style','width:'+ Number(progress_value)+'%')
 

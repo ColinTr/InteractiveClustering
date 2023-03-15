@@ -12,7 +12,7 @@ const KMeansParameters = (props) => {
         <Container>
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The number of classes to predict">
+                    <Tooltip title="The number of clusters to form">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Number of clusters <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>

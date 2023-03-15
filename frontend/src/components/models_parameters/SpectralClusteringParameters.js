@@ -13,7 +13,7 @@ const SpectralClusteringParameters = (props) => {
         <Container>
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The number of classes to predict">
+                    <Tooltip title="The number of clusters to form">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Number of clusters <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -34,7 +34,7 @@ const SpectralClusteringParameters = (props) => {
                 <Col className="col-7 d-flex flex-column">
                     <Tooltip title="How to construct the affinity matrix. ‘Nearest neighbors’ constructs the affinity matrix by computing a graph of nearest neighbors. ‘RBF’ constructs the affinity matrix using a radial basis function (RBF) kernel.">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Activation function <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                            Affinity <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>

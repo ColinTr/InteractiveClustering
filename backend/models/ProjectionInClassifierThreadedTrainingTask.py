@@ -3,6 +3,7 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
+import gc
 
 from models.ThreadedTrainingTask import KilledException, ThreadedTrainingTask
 from torch import nn
@@ -84,5 +85,12 @@ class ProjectionInClassifierThreadedTrainingTask(ThreadedTrainingTask):
             self.app.logger.info("Training complete")
 
         except KilledException:
-            print("Training thread stopping...")
-            # ToDo optional cleanup
+            self.app.logger.debug("Thread received KilledException, stopping training...")
+            torch.cuda.empty_cache()
+            gc.collect()
+
+        except RuntimeError as err:
+            self.app.logger.debug(err)
+            self.error_message = err.args[0]
+            torch.cuda.empty_cache()
+            gc.collect()

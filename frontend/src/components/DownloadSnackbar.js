@@ -40,10 +40,10 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                     icon: 'success',
                     title: "Thread " + props.thread_id + " stopped training"
                 })
-
-                // Close this snackbar
-                closeSnackbar(props.id)
             }
+
+            // In any case, we need to close this snackbar
+            closeSnackbar(props.id)
         })
     }
 
@@ -56,7 +56,7 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                             Started training model...
                         </div>
                     </Row>
-                    <Row style={{marginTop: "10px", marginBottom: "10px"}}>
+                    <Row style={{marginTop: "10px", marginBottom: "5px"}}>
                         <div>
                             <div className="progress">
                                 <div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100" id={"pb_thread_"+props.thread_id}/>
@@ -64,8 +64,11 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                         </div>
                     </Row>
                     <Row>
-                        <Col className="col-8 d-flex flex-column justify-content-end" style={{width:"100%"}}>
-                            <div className="form-check form-switch justify-content-end" style={{display: "flex", alignItems: "center", width:"100%"}}>
+                        <div className="text-start" id={"time_estimation_thread_" + props.thread_id}>Remaining time: ...</div>
+                    </Row>
+                    <Row>
+                        <Col className="col-8 d-flex flex-column" style={{width:"100%"}}>
+                            <div className="form-check form-switch" style={{display: "flex", alignItems: "center", width:"100%"}}>
                                 <input className="form-check-input"
                                        type="checkbox"
                                        key="switch_show_unknown_only"
