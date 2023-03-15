@@ -659,7 +659,7 @@ class FullPage extends React.Component {
                             this.setState({view_in_encoder_dict: view_in_encoder_dict_copy})
                             // Open the download notification on screen
                             enqueueSnackbar({
-                                anchorOrigin: { vertical: 'bottom', horizontal: 'right', },
+                                anchorOrigin: { vertical: 'top', horizontal: 'left', },
                                 persist: true,
                                 content: (key, message) => <DownloadSnackbar id={key}
                                                                              message={message}
