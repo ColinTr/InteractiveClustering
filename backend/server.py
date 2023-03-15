@@ -49,12 +49,6 @@ def corsify_response(response):
     return response
 
 
-def equal_dicts(d1, d2, ignore_keys):
-    d1_filtered = {k: v for k, v in d1.items() if k not in ignore_keys}
-    d2_filtered = {k: v for k, v in d2.items() if k not in ignore_keys}
-    return d1_filtered == d2_filtered
-
-
 @app.route('/getFileHeader', methods=['POST'])
 def getFileHeader():
     data = request.get_json()
@@ -102,7 +96,7 @@ def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features,
     if show_unknown_only is True:
         mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
     else:
-        mask = np.repeat(True, len(dataset))
+        mask = np.in1d(np.array(dataset[target_name]), unknown_classes) + np.in1d(np.array(dataset[target_name]), known_classes)
 
     tsne_data = np.array(dataset[selected_features])[mask]
 
@@ -150,17 +144,25 @@ def runTSNE(results_dict, dataset_name, dataset, target_name, selected_features,
     return tsne_array, corresponding_tsne_config_name
 
 
+def equal_dicts(d1, d2, ignore_keys):
+    d1_filtered = {k: v for k, v in d1.items() if k not in ignore_keys}
+    d2_filtered = {k: v for k, v in d2.items() if k not in ignore_keys}
+    return d1_filtered == d2_filtered
+
+
 def findTSNEConfig(results_dict, dataset_name, tsne_config_to_find):
     if dataset_name in results_dict.keys():
         for tsne_run_name in results_dict[dataset_name].keys():
             tsne_run = results_dict[dataset_name][tsne_run_name]
 
-            # In the case where we show all classes, the known and unknown classes don't matter in the T-SNE
+            # In the case where we show all classes, only the set of known + unknown classes should be equal
             if tsne_config_to_find['show_unknown_only'] is False and tsne_run["tsne_config"]['show_unknown_only'] is False:
-                if equal_dicts(tsne_run["tsne_config"], tsne_config_to_find, ['known_classes', 'unknown_classes']):
-                    if os.path.isfile(tsne_run['tsne_filepath']):
-                        tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
-                        return tsne_array, tsne_run_name
+                if set(tsne_run["tsne_config"]['known_classes'] + tsne_run["tsne_config"]['unknown_classes']) == set(tsne_config_to_find['known_classes'] + tsne_config_to_find['unknown_classes']):
+                    # If the sets are equal, we compare the two dicts while ignoring the keys 'known_classes' and 'unknown_classes'
+                    if equal_dicts(tsne_run["tsne_config"], tsne_config_to_find, ['known_classes', 'unknown_classes']):
+                        if os.path.isfile(tsne_run['tsne_filepath']):
+                            tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
+                            return tsne_array, tsne_run_name
             # If we show only the known classes, the whole config should be equal
             elif tsne_run["tsne_config"] == tsne_config_to_find:
                 if os.path.isfile(tsne_run['tsne_filepath']):
@@ -205,10 +207,10 @@ def getDatasetTSNE():
     random_state = image_config['random_state']
 
     if show_unknown_only is True:
-        unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+        mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
     else:
-        unknown_mask = np.repeat(True, len(dataset))
-    tsne_target = ["Class " + str(target) if target in known_classes else "Unknown" for target in np.array(dataset[target_name])[unknown_mask]]
+        mask = np.in1d(np.array(dataset[target_name]), unknown_classes) + np.in1d(np.array(dataset[target_name]), known_classes)
+    tsne_target = ["Class " + str(target) if target in known_classes else "Unknown" for target in np.array(dataset[target_name])[mask]]
 
     results_dict = loadResultsDict()
 
@@ -289,8 +291,6 @@ def runClustering():
     # Try to find the configuration in the results_dict
     tsne_array, corresponding_tsne_config_name = findTSNEConfig(results_dict, dataset_name, tsne_config)
 
-    unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
-
     # Try to find if the image was already generated beforehand
     # if tsne_array is not None:
     #     image_filepath = findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_config)
@@ -300,6 +300,9 @@ def runClustering():
     # If this configuration wasn't found in the configuration, it needs to be run
     if tsne_array is None:
         tsne_array, corresponding_tsne_config_name = runTSNE(results_dict, dataset_name, dataset, target_name, selected_features, tsne_seed, tsne_perplexity, known_classes, unknown_classes, show_unknown_only)
+
+    unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
+    known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
 
     # Generate the image based on the prediction
     if model_name == "k_means":
@@ -319,7 +322,7 @@ def runClustering():
 
         generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
                                                            tsne_array, random_state, color_by, model_config,  known_classes,
-                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask)
+                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
 
         return send_file(generated_image_filepath, mimetype='image/png')
 
@@ -343,7 +346,7 @@ def runClustering():
 
         generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
                                                            tsne_array, random_state, color_by, model_config,  known_classes,
-                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask)
+                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
 
         return send_file(generated_image_filepath, mimetype='image/png')
 
@@ -363,17 +366,17 @@ def runClustering():
                                 USE_CUDA=USE_CUDA)
 
         # 2) Define the training datasets
-        known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
-
         y = np.array(dataset[target_name])
+        y = y[known_mask + unknown_mask]
         mapper, ind = np.unique(y, return_inverse=True)
         mapping_dict = dict(zip(y, ind))
         y_mapped = np.array(list(map(mapping_dict.get, y)))
 
         device = utils.setup_device(app, use_cuda=USE_CUDA)
-        x_full = torch.tensor(filtered_dataset, dtype=torch.float, device=device)
+        x_full = torch.tensor(filtered_dataset[known_mask + unknown_mask], dtype=torch.float, device=device)
         y_full = np.repeat(-1, len(x_full))
-        y_full[known_mask] = y_mapped[known_mask]
+        new_known_mask = np.in1d(y, known_classes)
+        y_full[new_known_mask] = y_mapped[new_known_mask]
 
         # So that the classification target labels are in {0; ...; |Cl|+1}
         y_full_classifier = y_full.astype(np.int64).copy()
@@ -421,7 +424,6 @@ def runClustering():
                                             USE_CUDA)
 
         # 2) Define the training datasets
-        known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
         x_train = filtered_dataset[known_mask]
         y_train = np.array(dataset[target_name])[known_mask]
 
@@ -457,7 +459,7 @@ def saveClusteringResultsInSession(clustering_prediction, target_name, dataset, 
 
 def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target, tsne_array, random_state,
                             color_by, model_config, known_classes, unknown_classes, corresponding_tsne_config_name,
-                            unknown_mask):
+                            unknown_mask, known_mask):
     image_folder_path = os.path.join('.', 'results', 'images_folder', dataset_name)
 
     if not os.path.isdir(image_folder_path):
@@ -473,7 +475,7 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
     if show_unknown_only is True:
         target_to_plot = full_target[unknown_mask]
     else:
-        target_to_plot = full_target
+        target_to_plot = full_target[unknown_mask + known_mask]
     sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_to_plot)
     fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
@@ -540,9 +542,13 @@ def runRulesGeneration():
         x = dataset[last_clustering_selected_features][mask]
         y = last_clustering_prediction
     else:
-        x = dataset[last_clustering_selected_features]
+        known_mask = np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_known_classes)
+        unknown_mask = np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)
+
+        x = dataset[last_clustering_selected_features][known_mask + unknown_mask]
         y = np.array(last_clustering_original_target)
-        y[np.in1d(np.array(dataset[last_clustering_target_name]), last_clustering_unknown_classes)] = last_clustering_prediction
+        y[unknown_mask] = last_clustering_prediction
+        y = y[known_mask + unknown_mask]
 
     if decision_tree_training_mode == "multi_class":
         clf = DecisionTreeClassifier(max_leaf_nodes=decision_tree_max_leaf_nodes,
@@ -683,6 +689,7 @@ def getThreadResults():
     target_name = model_thread.target_name
     known_classes = model_thread.known_classes
     unknown_classes = model_thread.unknown_classes
+    known_mask = np.in1d(np.array(dataset[target_name]), known_classes)
     unknown_mask = np.in1d(np.array(dataset[target_name]), unknown_classes)
     selected_features = model_thread.selected_features
     model_name = model.model_name
@@ -710,8 +717,6 @@ def getThreadResults():
                                                              tsne_config['tsne_seed'], tsne_config['tsne_perplexity'],
                                                              known_classes, unknown_classes, show_unknown_only, view_in_encoder, model, device=model.device)
 
-    corresponding_tsne_config_name = model_thread.corresponding_tsne_config_name
-
     clustering_prediction = model.predict_new_data(np.array(dataset[selected_features])[unknown_mask])
 
     full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
@@ -721,7 +726,7 @@ def getThreadResults():
 
     generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
                                                        tsne_array, random_state, color_by, model_config,  known_classes,
-                                                       unknown_classes, corresponding_tsne_config_name, unknown_mask)
+                                                       unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
 
     return send_file(generated_image_filepath, mimetype='image/png')
 

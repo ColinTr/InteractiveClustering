@@ -27,7 +27,6 @@ class ThreadedTrainingTask(threading.Thread):
         self.random_state = random_state
         self.color_by = color_by
         self.model_config = model_config
-        self.corresponding_tsne_config_name = corresponding_tsne_config_name
         self.model_name = model_name
 
         self.model_to_train = None
