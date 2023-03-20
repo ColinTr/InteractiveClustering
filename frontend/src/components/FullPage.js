@@ -263,6 +263,9 @@ class FullPage extends React.Component {
             const updated_filtered_list = this.getUpdatedFilteredList(formatted_features, this.state.feature_search_query)
             this.setState({formatted_features: formatted_features, search_filtered_features_list: updated_filtered_list})  // And finally replace the array in the state
             this.setState({n_features_used: this.getNumberOfCheckedValues(formatted_features)})
+            this.setState({selected_class_feature: null})
+            this.setState({class_values_to_display: null})
+            this.setState({search_filtered_unique_values_list: null})
         }
     }
 

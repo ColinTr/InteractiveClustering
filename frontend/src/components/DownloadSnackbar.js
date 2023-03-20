@@ -38,7 +38,7 @@ const DownloadSnackbar = forwardRef((props, ref) => {
                     }
                 }).fire({
                     icon: 'success',
-                    title: "Thread " + props.thread_id + " stopped training"
+                    title: "Stopped thread " + props.thread_id
                 })
             }
 
