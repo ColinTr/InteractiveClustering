@@ -20,7 +20,7 @@ Simple web interface to interact with various clustering algorithms and display 
 
 ## Installation
 
-1) Clone the repository in the [Git Bash](https://git-scm.com/downloads) with `git clone https://gitlab.tech.orange/exploration-des-dnis/interactiveclustering`
+1) Clone the repository in the [Git Bash](https://git-scm.com/downloads) with `git clone https://github.com/ColinTr/InteractiveClustering`
 
 2) Set up the Python 3.10.9 virtual environment for the backend with [Anaconda](https://docs.anaconda.com/anaconda/install/index.html):
 ```bash
