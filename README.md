@@ -13,7 +13,7 @@ Simple web interface to interact with various clustering algorithms and display 
 
 ## Demonstration video for ECML 2023
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=66T6RaJQjnE&cc_load_policy=1" target="_blank">
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=wlPxyuFGXOg&cc_load_policy=1" target="_blank">
  <img src="youtube_thumbnail.png" alt="Watch the video" border="10" />
 </a>
 
