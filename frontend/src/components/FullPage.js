@@ -11,6 +11,7 @@ import FeatureSelection from "./FeatureSelection";
 import RulesGenerator from "./RulesGenerator";
 import fireSwalError from "./swal_functions";
 
+
 class FullPage extends React.Component {
 
     constructor(props) {
@@ -370,10 +371,13 @@ class FullPage extends React.Component {
                     })
                 }
                 if (serverPromise.status === 200) {
-                    serverPromise.blob().then(image_response_blob => {
-                        const imageObjectURL = URL.createObjectURL(image_response_blob);
-                        this.setState({image_to_display: imageObjectURL})
+                    serverPromise.json().then(plotly_data => {
+                        this.setState({image_to_display: plotly_data})
                     })
+                    // serverPromise.blob().then(image_response_blob => {
+                    //     const imageObjectURL = URL.createObjectURL(image_response_blob);
+                    //     this.setState({image_to_display: imageObjectURL})
+                    // })
                 }
             })
     }
@@ -732,10 +736,14 @@ class FullPage extends React.Component {
                         }))
                     // Other clustering models are fast, so we just wait for the result
                     } else {
-                        serverPromise.blob().then(image_response_blob => {
-                            const imageObjectURL = URL.createObjectURL(image_response_blob);
-                            this.setState({image_to_display: imageObjectURL})
+                        serverPromise.json().then(plotly_data => {
+                            this.setState({image_to_display: plotly_data})
                         })
+                        // serverPromise.blob().then(image_response_blob => {
+                        //     const imageObjectURL = URL.createObjectURL(image_response_blob);
+                        //     this.setState({image_to_display: imageObjectURL})
+                        // })
+
                     }
                 }
             })
@@ -894,10 +902,13 @@ class FullPage extends React.Component {
                     })
                 }
                 if (serverPromise.status === 200) {
-                    serverPromise.blob().then(image_response_blob => {
-                        const imageObjectURL = URL.createObjectURL(image_response_blob);
-                        this.setState({image_to_display: imageObjectURL})
+                    serverPromise.json().then(plotly_data => {
+                        this.setState({image_to_display: plotly_data})
                     })
+                    // serverPromise.blob().then(image_response_blob => {
+                    //     const imageObjectURL = URL.createObjectURL(image_response_blob);
+                    //     this.setState({image_to_display: imageObjectURL})
+                    // })
                 }
             })
     }

@@ -3,32 +3,32 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
-import gc
 
-import utils
 from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
-from models.ProjectionInClassifierModel import ProjectionInClassifierModel
-from models.TabularNCDModel import TabularNCDModel
 from models.TabularNCDThreadedTrainingTask import TabularNCDThreadedTrainingTask
+from models.ProjectionInClassifierModel import ProjectionInClassifierModel
 from sklearn.cluster import KMeans, SpectralClustering
 from flask import Flask, jsonify, request, send_file
+from models.TabularNCDModel import TabularNCDModel
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from matplotlib.figure import Figure
 from sklearn.manifold import TSNE
 from PyPDF2 import PdfMerger
+import plotly.express as px
 from flask_cors import CORS
 from sklearn import tree
-import seaborn as sns
 import pandas as pd
 import numpy as np
 import datetime
 import graphviz
 import logging
 import shutil
+import plotly
 import torch
+import utils
 import json
 import os
+import gc
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -186,6 +186,26 @@ def findImage(results_dict, dataset_name, corresponding_tsne_config_name, image_
     return None
 
 
+def wrap_list(my_list, separator='<br>'):
+    tsne_target_wrapped = []
+    max_word_length = 20
+    for e in my_list:
+        if len(e) > max_word_length:
+            split_start_index = 0
+            split_end_index = max_word_length
+            wrapped_word = ''
+            while split_end_index != len(e):
+                wrapped_word += e[split_start_index:split_end_index] + separator
+                split_start_index += max_word_length
+                split_end_index = min(len(e), split_end_index + max_word_length)
+            wrapped_word += e[split_start_index:split_end_index]
+
+            tsne_target_wrapped += [wrapped_word]
+        else:
+            tsne_target_wrapped += [e]
+    return tsne_target_wrapped
+
+
 @app.route('/getDatasetTSNE', methods=['POST'])
 def getDatasetTSNE():
     data = request.get_json()
@@ -239,12 +259,16 @@ def getDatasetTSNE():
 
     image_filename = image_datetime_string + '.png'
 
-    fig = Figure(figsize=(8, 8))
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("T-SNE of the original " + dataset_name + " dataset")
-    sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=tsne_target)
-
-    fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
+    tsne_target_wrapped = wrap_list(tsne_target, separator='<br>')
+    fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
+                     y=np.array(tsne_array[tsne_array.columns[1]]),
+                     color=tsne_target_wrapped,
+                     title="T-SNE of the original " + dataset_name + " dataset")
+    fig.update_layout(yaxis={'title': None},
+                      xaxis={'title': None},
+                      margin=dict(l=0, r=0, t=40, b=0))
+    graphJSON = plotly.io.to_json(fig, pretty=True)
+    # fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
     results_dict[dataset_name][corresponding_tsne_config_name]['images_configurations']['image_' + image_datetime_string] = {
         "image_configuration": {
@@ -259,7 +283,7 @@ def getDatasetTSNE():
 
     saveResultsDict(results_dict)
 
-    return send_file(os.path.join(image_folder_path, image_filename), mimetype='image/png')
+    return graphJSON
 
 
 @app.route('/runClustering', methods=['POST'])
@@ -322,11 +346,11 @@ def runClustering():
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 
-        generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
-                                                           tsne_array, random_state, color_by, model_config,  known_classes,
-                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
+        graphJSON = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
+                                            tsne_array, random_state, color_by, model_config,  known_classes,
+                                            unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
 
-        return send_file(generated_image_filepath, mimetype='image/png')
+        return graphJSON
 
     elif model_name == "spectral_clustering":
         spectral_clustering_n_clusters = model_config['spectral_clustering_n_clusters']
@@ -346,11 +370,11 @@ def runClustering():
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 
-        generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
-                                                           tsne_array, random_state, color_by, model_config,  known_classes,
-                                                           unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
+        graphJSON = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
+                                            tsne_array, random_state, color_by, model_config,  known_classes,
+                                            unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
 
-        return send_file(generated_image_filepath, mimetype='image/png')
+        return graphJSON
 
     elif model_name == "tabularncd":
         # 1) Define the model
@@ -471,15 +495,21 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
 
     image_filename = image_datetime_string + '.png'
 
-    fig = Figure(figsize=(8, 8))
-    axis = fig.add_subplot(1, 1, 1)
-    axis.set_title("T-SNE of the original " + dataset_name + " dataset colored by " + model_name)
     if show_unknown_only is True:
         target_to_plot = full_target[unknown_mask]
     else:
         target_to_plot = full_target[unknown_mask + known_mask]
-    sns.scatterplot(ax=axis, x=np.array(tsne_array[tsne_array.columns[0]]), y=np.array(tsne_array[tsne_array.columns[1]]), hue=target_to_plot)
-    fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
+    
+    tsne_target_wrapped = wrap_list(target_to_plot, separator='<br>')
+    fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
+                     y=np.array(tsne_array[tsne_array.columns[1]]),
+                     color=tsne_target_wrapped,
+                     title="T-SNE of the original " + dataset_name + " dataset colored by " + model_name)
+    fig.update_layout(yaxis={'title': None},
+                      xaxis={'title': None},
+                      margin=dict(l=0, r=0, t=40, b=0))
+    graphJSON = plotly.io.to_json(fig, pretty=True)
+    # fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
     results_dict = loadResultsDict()
     results_dict[dataset_name][corresponding_tsne_config_name]['images_configurations']['image_' + image_datetime_string] = {
@@ -494,7 +524,7 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
     }
     saveResultsDict(results_dict)
 
-    return os.path.join(image_folder_path, image_filename)
+    return graphJSON
 
 
 @app.route('/runRulesGeneration', methods=['POST'])
@@ -735,11 +765,10 @@ def getThreadResults():
 
     saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes, selected_features)
 
-    generated_image_filepath = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
-                                                       tsne_array, random_state, color_by, model_config,  known_classes,
-                                                       unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
-
-    return send_file(generated_image_filepath, mimetype='image/png')
+    graphJSON = generateClusteringImage(dataset_name, model_name, show_unknown_only, full_target,
+                                        tsne_array, random_state, color_by, model_config,  known_classes,
+                                        unknown_classes, corresponding_tsne_config_name, unknown_mask, known_mask)
+    return graphJSON
 
 
 @app.errorhandler(500)
