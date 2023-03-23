@@ -6,6 +6,7 @@ import Button from "react-bootstrap/Button";
 import {Tooltip} from "@mui/material";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
+import Plot from 'react-plotly.js';
 
 
 class DataVisualization extends React.Component {
@@ -18,10 +19,13 @@ class DataVisualization extends React.Component {
             )
         } else {
             return (
-                <img src={this.props.image_to_display}
-                     alt="T-SNE of the data"
-                     style={{height: "100%", width:"88%", objectFit: "contain"}}
+                <div style={{display: "flex", alignItems: "center", height:"100%", justifyContent: "center"}}>
+                <Plot data={this.props.image_to_display.data}
+                      layout={this.props.image_to_display.layout}
+                      style={{height: "97%", width:"100%", objectFit: "contain"}}
+                      alt="T-SNE of the data"
                 />
+                </div>
             )
         }
     }
@@ -33,14 +37,16 @@ class DataVisualization extends React.Component {
                     <Row className="d-flex flex-row" style={{paddingRight: "6px"}}>
                         <div style={{display: "flex"}}>
                             <h5>Data visualization</h5>
-                            <Tooltip title="Save image" style={{marginLeft: "auto", marginRight: "6px"}}>
-                                <Button className="btn-secondary" onClick={this.props.onSaveImageButtonClick}>
-                                    <div className="d-flex py-1">
-                                        <FontAwesomeIcon icon={regular('floppy-disk')}/>
-                                    </div>
-                                </Button>
-                            </Tooltip>
-                            <Tooltip title="Clear cached data in server">
+                            {/*
+                                <Tooltip title="Save image" style={{marginLeft: "auto", marginRight: "6px"}}>
+                                    <Button className="btn-secondary" onClick={this.props.onSaveImageButtonClick}>
+                                        <div className="d-flex py-1">
+                                            <FontAwesomeIcon icon={regular('floppy-disk')}/>
+                                        </div>
+                                    </Button>
+                                </Tooltip>
+                            */}
+                            <Tooltip title="Clear cached data in server" style={{marginLeft: "auto", marginRight: "6px"}}>
                                 <Button className="btn-secondary" onClick={this.props.onClearCacheButtonClick}>
                                     <div className="d-flex py-1">
                                         <FontAwesomeIcon icon={regular('trash-can')}/>
