@@ -3,33 +3,13 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import {Tooltip} from "@mui/material";
+import { Tooltip } from "@mui/material";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
 import Plot from 'react-plotly.js';
 
 
 class DataVisualization extends React.Component {
-    img_display = () => {
-        if(this.props.image_to_display == null){
-            return (
-                <div style={{display: "flex", alignItems: "center", height:"100%", justifyContent: "center"}}>
-                    <i>Load a dataset to visualize</i>
-                </div>
-            )
-        } else {
-            return (
-                <div style={{display: "flex", alignItems: "center", height:"100%", justifyContent: "center"}}>
-                <Plot data={this.props.image_to_display.data}
-                      layout={this.props.image_to_display.layout}
-                      style={{height: "97%", width:"100%", objectFit: "contain"}}
-                      alt="T-SNE of the data"
-                />
-                </div>
-            )
-        }
-    }
-
     render() {
         return (
             <Container style={{height:"100%"}}>
@@ -57,7 +37,15 @@ class DataVisualization extends React.Component {
                     </Row>
                     <Row className="d-flex flex-row mt-1" style={{flexGrow:'1', overflowY: "auto", height:"100%"}}>
                         <center>
-                            {this.img_display()}
+                            <div style={{display: "flex", alignItems: "center", height: "100%", justifyContent: "center"}}>
+                                <Plot data={this.props.image_to_display === null ? [] : this.props.image_to_display.data}
+                                      layout={this.props.image_to_display === null ? {} : this.props.image_to_display.layout}
+                                      style={{height: "97%", width: "100%", objectFit: "contain"}}
+                                      alt="T-SNE of the data"
+                                      onClick={(e) => this.props.handlePointClick(e)}
+                                      useResizeHandler={true}
+                                />
+                            </div>
                         </center>
                     </Row>
                     <Row className="d-flex flex-row" style={{paddingLeft: "6px", paddingRight: "6px"}}>

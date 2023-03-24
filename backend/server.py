@@ -234,6 +234,7 @@ def getDatasetTSNE():
         mask = np.in1d(np.array(dataset[target_name]), unknown_classes) + np.in1d(np.array(dataset[target_name]), known_classes)
     tsne_target = ["Class " + str(target) if target in known_classes else "Unknown" for target in np.array(dataset[target_name])[mask]]
 
+
     results_dict = loadResultsDict()
 
     # Try to find the configuration in the results_dict
@@ -260,6 +261,10 @@ def getDatasetTSNE():
     image_filename = image_datetime_string + '.png'
 
     tsne_target_wrapped = wrap_list(tsne_target, separator='<br>')
+
+    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': dataset.index[mask],
+                                                'point_class': tsne_target_wrapped})
+
     fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
                      y=np.array(tsne_array[tsne_array.columns[1]]),
                      color=tsne_target_wrapped,
@@ -284,6 +289,28 @@ def getDatasetTSNE():
     saveResultsDict(results_dict)
 
     return graphJSON
+
+
+@app.route('/getPointData', methods=['POST'])
+def getPointData():
+    data = request.get_json()
+    class_name = data['class_name']
+    point_number = data['point_number']
+    dataset_name = data['dataset_name']
+
+    if dataset_name not in session['loaded_datasets'].keys():
+        return jsonify({"error_message": "Dataset not loaded"}), 422
+
+    dataset = session['loaded_datasets'].get(dataset_name)
+
+    last_sent_points = session['last_sent_points']
+
+    point_to_get_index = last_sent_points.loc[last_sent_points['point_class'] == class_name].iloc[[point_number]]['point_index_in_df']
+
+    point_to_get_df = dataset.iloc[[int(point_to_get_index)]]
+
+    return jsonify({'point_feature_names': point_to_get_df.columns.tolist(),
+                    'point_feature_values': point_to_get_df.values.tolist()})
 
 
 @app.route('/runClustering', methods=['POST'])
@@ -496,11 +523,17 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
     image_filename = image_datetime_string + '.png'
 
     if show_unknown_only is True:
-        target_to_plot = full_target[unknown_mask]
+        mask = unknown_mask
     else:
-        target_to_plot = full_target[unknown_mask + known_mask]
-    
+        mask = unknown_mask + known_mask
+
+    target_to_plot = full_target[mask]
+
     tsne_target_wrapped = wrap_list(target_to_plot, separator='<br>')
+
+    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': session.get(dataset_name).index[mask],
+                                                'point_class': tsne_target_wrapped})
+
     fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
                      y=np.array(tsne_array[tsne_array.columns[1]]),
                      color=tsne_target_wrapped,

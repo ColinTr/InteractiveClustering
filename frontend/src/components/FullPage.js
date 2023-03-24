@@ -10,6 +10,7 @@ import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import RulesGenerator from "./RulesGenerator";
 import fireSwalError from "./swal_functions";
+import FeatureDisplayModal from "./FeatureDisplayModal";
 
 
 class FullPage extends React.Component {
@@ -45,7 +46,6 @@ class FullPage extends React.Component {
             decision_tree_max_depth: null,
             decision_tree_min_samples_split: 2,
             decision_tree_max_leaf_nodes: 10,
-            rules_modal_is_open: false,
             decision_tree_response_text_rules: "",
             decision_tree_response_pdf_file: null,
             decision_tree_response_accuracy_score: null,
@@ -78,6 +78,11 @@ class FullPage extends React.Component {
             model_projection_in_classifier_lr_value : 0.001,
             model_projection_in_classifier_activation_fct: "sigmoid",
             model_projection_in_classifier_training_progress: 0,
+
+            // Feature modal, opened when a point is clicked in the scatter plot
+            feature_modal_is_open: false,
+            point_feature_names: null,
+            point_feature_values: null,
         };
 
         this.state = this.initial_state;
@@ -441,22 +446,16 @@ class FullPage extends React.Component {
                             title: 'Rules generated'
                         })
                     })
-
-                    // serverPromise.json().then(response_json => {
-                    //     this.setState({
-                    //         decision_tree_response_training_mode: response_json["decision_tree_training_mode"],
-                    //         decision_tree_response_text_rules: response_json["text_rules"],
-                    //         decision_tree_response_accuracy_score: response_json["accuracy_score"]
-                    //     })
-//
-
-                    // })
                 }
             })
     }
 
     onShowRulesButtonClick = () => {
-        this.openRulesModal()
+        if(this.state.decision_tree_response_pdf_file === null){
+            fireSwalError("No rules to show", "Please run a clustering before")
+        } else {
+            window.open(this.state.decision_tree_response_pdf_file)
+        }
     }
 
     onDecisionTreeRadioButtonChange = (decision_tree_training_mode) => {
@@ -816,17 +815,8 @@ class FullPage extends React.Component {
         this.setState({decision_tree_unknown_classes_only: !this.state.decision_tree_unknown_classes_only})
     }
 
-    openRulesModal = () => {
-        if(this.state.decision_tree_response_pdf_file === null){
-            fireSwalError("No rules to show", "Please run a clustering before")
-        } else {
-            window.open(this.state.decision_tree_response_pdf_file)
-        }
-        // this.setState({rules_modal_is_open: true})
-    }
-
-    closeRulesModal = () => {
-        this.setState({rules_modal_is_open: false})
+    closeFeaturesModal = () => {
+        this.setState({feature_modal_is_open: false})
     }
 
     onSaveImageButtonClick = () => {
@@ -948,19 +938,50 @@ class FullPage extends React.Component {
         })
     }
 
+    handlePointClick = e => {
+        const point_to_get = e['points'][0]
+
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+
+            body: JSON.stringify({
+                'dataset_name': this.state.dataset_name,
+                'class_name': point_to_get.data.name,
+                'point_number': point_to_get.pointNumber
+            })
+        }
+        fetch('/getPointData', requestOptions)
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        fireSwalError('Status 422 - Server error', error['error_message'])
+                    })
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.json().then(server_json_response => {
+                        console.log(server_json_response)
+                        this.setState({
+                            point_feature_names: server_json_response.point_feature_names,
+                            point_feature_values: server_json_response.point_feature_values,
+                            feature_modal_is_open: true
+                        })
+                    })
+                }
+            })
+    }
+
     render() {
         return (
             <Row style={{height: '100%', width:"99%"}} className="d-flex flex-row justify-content-center align-items-center">
-                {/*
-                <RulesDisplayModal rules_modal_is_open={this.state.rules_modal_is_open}
-                                   openRulesModal={this.openRulesModal}
-                                   closeRulesModal={this.closeRulesModal}
-                                   decision_tree_response_training_mode={this.state.decision_tree_response_training_mode}
-                                   decision_tree_response_text_rules={this.state.decision_tree_response_text_rules}
-                                   decision_tree_response_accuracy_score={this.state.decision_tree_response_accuracy_score}
-                                   decision_tree_response_pdf_file={this.state.decision_tree_response_pdf_file}
+                <FeatureDisplayModal feature_modal_is_open={this.state.feature_modal_is_open}
+                                     closeFeaturesModal={this.closeFeaturesModal}
+                                     point_feature_names={this.state.point_feature_names}
+                                     point_feature_values={this.state.point_feature_values}
                 />
-                */}
 
                 <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "98%"}}>
                     <Row className="my_row py-2">
@@ -1004,6 +1025,8 @@ class FullPage extends React.Component {
 
                                            onSaveImageButtonClick={this.onSaveImageButtonClick}
                                            onClearCacheButtonClick={this.onClearCacheButtonClick}
+
+                                           handlePointClick={this.handlePointClick}
                         />
                     </Row>
                 </Col>
