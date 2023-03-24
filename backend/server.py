@@ -234,7 +234,6 @@ def getDatasetTSNE():
         mask = np.in1d(np.array(dataset[target_name]), unknown_classes) + np.in1d(np.array(dataset[target_name]), known_classes)
     tsne_target = ["Class " + str(target) if target in known_classes else "Unknown" for target in np.array(dataset[target_name])[mask]]
 
-
     results_dict = loadResultsDict()
 
     # Try to find the configuration in the results_dict
@@ -531,7 +530,7 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
 
     tsne_target_wrapped = wrap_list(target_to_plot, separator='<br>')
 
-    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': session.get(dataset_name).index[mask],
+    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': session['loaded_datasets'].get(dataset_name).index[mask],
                                                 'point_class': tsne_target_wrapped})
 
     fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
