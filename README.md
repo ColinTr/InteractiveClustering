@@ -13,14 +13,14 @@ Simple web interface to interact with various clustering algorithms and display 
 
 ## Demonstration video for ECML 2023
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=wlPxyuFGXOg&cc_load_policy=1" target="_blank">
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=W7ru8NHPj-8&cc_load_policy=1" target="_blank">
  <img src="youtube_thumbnail.png" alt="Watch the video" border="10" />
 </a>
 
 
 ## Installation
 
-1) Clone the repository in the [Git Bash](https://git-scm.com/downloads) with `git clone https://gitlab.tech.orange/exploration-des-dnis/interactiveclustering`
+1) Clone the repository in the [Git Bash](https://git-scm.com/downloads) with `git clone https://github.com/ColinTr/InteractiveClustering`
 
 2) Set up the Python 3.10.9 virtual environment for the backend with [Anaconda](https://docs.anaconda.com/anaconda/install/index.html):
 ```bash
