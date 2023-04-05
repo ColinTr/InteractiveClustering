@@ -55,7 +55,7 @@ def corsify_response(response):
 def getFileHeader():
     data = request.get_json()
     file_path = os.path.join('..', 'datasets', data['selected_file_path'])
-    dataset = pd.read_csv(file_path, sep=None)
+    dataset = pd.read_csv(file_path, sep=data['field_separator'])
 
     # Shuffle the dataset
     dataset = dataset.sample(frac=1, random_state=0).reset_index(drop=True)
@@ -651,7 +651,7 @@ def runRulesGeneration():
             class_or_cluster = f"Class {c}" if c in last_clustering_known_classes else f"Clust {c}"
 
             classes = [class_or_cluster if c == 1 else "NOT " + class_or_cluster for c in estimator.classes_]
-            
+
             dot_data = tree.export_graphviz(estimator, out_file=None,
                                             feature_names=[f_n.replace('"', '')[:100] for f_n in last_clustering_selected_features],
                                             filled=True,
