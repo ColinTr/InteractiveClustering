@@ -13,7 +13,7 @@ class DatasetSelector extends React.Component {
         super(props);
         this.state = {
             selectedFile: "",
-            dataset_separator: ',',
+            field_separator: ',',
         };
     }
 
@@ -28,7 +28,7 @@ class DatasetSelector extends React.Component {
     }
 
     onDatasetSeparatorChange = selected_sep => {
-        this.setState({dataset_separator: selected_sep.target.value})
+        this.setState({field_separator: selected_sep.target.value})
     }
 
     onFileUpload = () => {
@@ -37,7 +37,7 @@ class DatasetSelector extends React.Component {
             return
         }
 
-        if (this.state.dataset_separator === ""){
+        if (this.state.field_separator === ""){
             fireSwalError('Please specify a field separator')
             return
         }
@@ -48,7 +48,7 @@ class DatasetSelector extends React.Component {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 'selected_file_path': this.state.selectedFile,
-                'field_separator': this.state.dataset_separator,
+                'field_separator': this.state.field_separator,
                 'dataset_name': dataset_name})
         }
         fetch('/getFileHeader', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
@@ -95,7 +95,7 @@ class DatasetSelector extends React.Component {
                             <input type="text"
                                    placeholder="field separator"
                                    onChange={this.onDatasetSeparatorChange}
-                                   defaultValue={this.state.dataset_separator}
+                                   defaultValue={this.state.field_separator}
                             />
                         </Col>
                     </Row>
