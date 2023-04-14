@@ -149,7 +149,7 @@ class TabularNCDThreadedTrainingTask(ThreadedTrainingTask):
 
                     # (2.5) ===== Estimate the cosine_top_k using the labeled data only =====
                     with torch.no_grad():
-                        if self.use_unlab is False or self.use_unlab:
+                        if self.use_unlab is False:
                             # Compute the cosine similarity matrix of the labeled data:
                             encoded_x_lab = encoded_x[mask_lab]
                             labeled_similarities = F.cosine_similarity(encoded_x_lab.unsqueeze(1), encoded_x_lab, dim=-1)
