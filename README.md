@@ -2,8 +2,6 @@
 
 Simple web interface to interact with various clustering algorithms and display their results.
 
-**Note:** The backend uses the port 5000 and the frontend uses the port 3000.
-
 **/!\ Datasets must be placed in ./datasets/... and cannot be loaded from other folders.**
 
 ## The interface
@@ -20,9 +18,14 @@ Simple web interface to interact with various clustering algorithms and display 
 
 ## Installation
 
+**/!\ Warning:**
+Installation wont work behind the **proxy** and on the **intranet**.
+It is advised to deactivate the proxy and connect to a wifi with full internet access.
+
+
 1) Clone the repository in the [Git Bash](https://git-scm.com/downloads) with `git clone https://github.com/ColinTr/InteractiveClustering`
 
-2) Set up the Python 3.10.9 virtual environment for the backend with [Anaconda](https://docs.anaconda.com/anaconda/install/index.html):
+2) Install [Anaconda](https://docs.anaconda.com/anaconda/install/index.html) and open it **in administrator**:
 ```bash
 cd backend
 # Create the virtual environment with conda
@@ -38,9 +41,9 @@ python -c "import torch; print(torch.cuda.is_available())"
 python server.py
 ```
 
-4) Install [Node.js](https://nodejs.org/en/) for the frontend website.
+4) Install [Node.js](https://nodejs.org/en/).
 
-5) Build the website and run it with:
+5) Open cmd **in administrator**:
 
 ```bash
 cd frontend
@@ -49,3 +52,5 @@ npm start
 ```
 
 At this point, the backend python server is running, and the frontend website should be accessible on http://localhost:3000/
+
+**Note:** The backend uses the port 5000 and the frontend uses the port 3000.
