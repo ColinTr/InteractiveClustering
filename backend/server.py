@@ -3,7 +3,6 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
-
 from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
 from models.TabularNCDThreadedTrainingTask import TabularNCDThreadedTrainingTask
 from models.ProjectionInClassifierModel import ProjectionInClassifierModel
@@ -29,6 +28,7 @@ import utils
 import json
 import os
 import gc
+import re
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -627,9 +627,12 @@ def runRulesGeneration():
                                         filled=True,
                                         max_depth=decision_tree_max_leaf_nodes,
                                         class_names=classes,
-                                        proportion=False)
+                                        proportion=False,
+                                        rounded=True)
 
         dot_data = dot_data[:15] + 'label = "This tree has ' + "{:.1f}".format(accuracy_score*100) + '% train accuracy";\n' + dot_data[15:]
+        dot_data = re.sub('value = [[0-9]+(, [0-9]+)*]', '', dot_data)
+        dot_data = dot_data.replace(r"\n\n", r"\n")
 
         graph = graphviz.Source(dot_data)
         filename = graph.render(os.path.join(".", "results", "latest_exported_tree"))  # export PDF
