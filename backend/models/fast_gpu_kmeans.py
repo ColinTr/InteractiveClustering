@@ -1,4 +1,3 @@
-from tqdm import tqdm
 import numpy as np
 import random
 import torch
@@ -13,7 +12,7 @@ class fast_gpu_kmeans:
         self.k_clusters = k_clusters
         self.inertia = math.inf
 
-    def init_centroids(self, x, n_local_trials=None, disable_tqdm=True):
+    def init_centroids(self, x, n_local_trials=None):
         """
         Using k-means++ to initialize the centroids.
         Each new centroid is chosen from the remaining data points with a probability.
@@ -28,7 +27,6 @@ class fast_gpu_kmeans:
         # (2) Initialize the list of pairwise distances
         pairwise_distances = euclidean_distance_2d_1d(x, self.centroids[-1]).reshape(-1, 1)
 
-        pbar = tqdm(total=self.k_clusters, disable=disable_tqdm)
         while len(self.centroids) < self.k_clusters:
             d2, _ = torch.min(pairwise_distances, dim=1)  # Keep the distance to the closest cluster center only
             d2_sum = d2.sum()
@@ -49,9 +47,8 @@ class fast_gpu_kmeans:
                 distances_to_rand_centroid = torch.cdist(x, x[best_candidate_index])
                 pairwise_distances = torch.cat((pairwise_distances, distances_to_rand_centroid), dim=1)  # Add the distance to the latest new centroid to the list
                 self.centroids = torch.cat((self.centroids, x[best_candidate_index]), dim=0)  # Add the new centroid to the list of centroids
-            pbar.update(1)
 
-    def make_centroids_converge(self, x, tolerance=1e-10, n_iterations=1000, disable_tqdm=True):
+    def make_centroids_converge(self, x, tolerance=1e-10, n_iterations=1000):
         """
         Make the centroids converge using the base k-means algorithm.
         Convergence will stop if we either reach n_iterations or if the shift is smaller than the tolerance.
@@ -59,7 +56,7 @@ class fast_gpu_kmeans:
         inertia = math.inf
         labels = None
 
-        for it in tqdm(range(n_iterations), disable=disable_tqdm):
+        for it in range(n_iterations):
             centroids_previous_position = self.centroids.clone()
 
             # For each unlabeled point, get the dist to the closest cluster and the cluster index
@@ -83,7 +80,7 @@ class fast_gpu_kmeans:
         # print(f"Stopped after {it} iterations (center_shift={center_shift})")
         return inertia, labels
 
-    def fit_predict(self, x, n_local_trials=None, disable_tqdm=True, tolerance=1e-10, n_iterations=1000, n_init=10):
+    def fit_predict(self, x, n_local_trials=None, tolerance=1e-10, n_iterations=1000, n_init=10):
         """
         For n_init executions, initialize and converge the centroids.
         We keep the centroids that achieved the smallest inertia.
@@ -92,7 +89,7 @@ class fast_gpu_kmeans:
         best_centroids = None
         best_labels = None
 
-        for init in tqdm(range(n_init), disable=disable_tqdm):
+        for init in range(n_init):
             self.init_centroids(x, n_local_trials=n_local_trials)
 
             inertia, labels = self.make_centroids_converge(x, tolerance=tolerance, n_iterations=n_iterations)

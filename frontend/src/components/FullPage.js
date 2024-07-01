@@ -41,7 +41,7 @@ class FullPage extends React.Component {
             estimated_times_to_train: {},
 
             // Default rules generation parameters
-            decision_tree_training_mode: "multi_class",
+            decision_tree_training_mode: "one_vs_rest",
             decision_tree_unknown_classes_only: false,
             decision_tree_max_depth: null,
             decision_tree_min_samples_split: 2,
@@ -53,23 +53,25 @@ class FullPage extends React.Component {
             selected_model : "pbn",
 
             // Default PBN parameters
+            model_pbn_epochs : 200,
             model_pbn_n_clusters : 10,
-            model_pbn_w : 0.8,
-            model_pbn_lr : 0.001,
+            model_pbn_w : 0.9,
+            model_pbn_lr : 0.0005,
             model_pbn_dropout : 0.2,
             model_pbn_activation_fct : "relu",
             model_pbn_hidden_layers: [],
 
             // Default TabularNCD parameters
+            model_tabncd_epochs : 50,
             model_tabncd_n_clusters : 10,
             model_tabncd_cosine_topk : 10,
-            model_tabncd_w1 : 0.8,
-            model_tabncd_w2 : 0.8,
-            model_tabncd_classifier_lr : 0.001,
-            model_tabncd_cluster_lr : 0.001,
-            model_tabncd_k_neighbors : 5,
-            model_tabncd_dropout : 0.2,
-            model_tabncd_activation_fct : "sigmoid",
+            model_tabncd_w1 : 0.5,
+            model_tabncd_w2 : 0.9,
+            model_tabncd_topk : 0.5,
+            model_tabncd_lr : 0.0005,
+            model_tabncd_k_neighbors : 10,
+            model_tabncd_dropout : 0.1,
+            model_tabncd_activation_fct : "relu",
             model_tabncd_hidden_layers: [],
 
             // Default k means parameters
@@ -80,11 +82,12 @@ class FullPage extends React.Component {
             model_spectral_clustering_affinity: 'rbf',
 
             // Default projection in classifier parameters
+            model_projection_in_classifier_epochs: 200,
             model_projection_in_classifier_n_clusters: 10,
             model_projection_in_classifier_hidden_layers: [],
             model_projection_in_classifier_dropout: 0.2,
             model_projection_in_classifier_lr_value : 0.001,
-            model_projection_in_classifier_activation_fct: "sigmoid",
+            model_projection_in_classifier_activation_fct: "relu",
             model_projection_in_classifier_training_progress: 0,
 
             // Feature modal, opened when a point is clicked in the scatter plot
@@ -117,7 +120,7 @@ class FullPage extends React.Component {
                 'dataset_name': this.state.dataset_name,
                 'feature_name': feature_name})
         }
-        fetch('/getFeatureUniqueValues', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+        fetch('/getFeatureUniqueValues', requestOptions)  // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
                     fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
@@ -143,7 +146,13 @@ class FullPage extends React.Component {
         const new_formatted_features = new_features.map((feature, index) => ({"name": feature, "checked": true, "index": index, "disabled": false}))
         this.setState({formatted_features: new_formatted_features})
         this.setState({search_filtered_features_list: this.getUpdatedFilteredList(new_formatted_features, this.state.feature_search_query)})
-        this.setState({n_features_used: this.getNumberOfCheckedValues(new_formatted_features)})
+        const tmp_n_feat = this.getNumberOfCheckedValues(new_formatted_features)
+        this.setState({n_features_used: tmp_n_feat})
+
+        // Add default layers to models:
+        this.setState({model_projection_in_classifier_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
+        this.setState({model_tabncd_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
+        this.setState({model_pbn_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
     }
 
     onChangeFeaturesSearch = query => {
@@ -478,6 +487,10 @@ class FullPage extends React.Component {
         this.setState({decision_tree_max_leaf_nodes: parseInt(event.target.value)})
     }
 
+    on_projection_in_classifier_epochs_change = (event) => {
+        this.setState({model_projection_in_classifier_epochs: parseInt(event.target.value)})
+    }
+
     on_projection_in_classifier_n_clusters_change = (event) => {
         this.setState({model_projection_in_classifier_n_clusters: parseInt(event.target.value)})
     }
@@ -566,6 +579,12 @@ class FullPage extends React.Component {
                 return
             }
         }
+        if(this.state.selected_model === "pbn"){
+            if(this.state.model_pbn_hidden_layers.length === 0){
+                fireSwalError("Please add at least one hidden layer")
+                return
+            }
+        }
 
         let model_config = null
 
@@ -573,31 +592,32 @@ class FullPage extends React.Component {
             model_config = {
                 'model_name': this.state.selected_model,
 
+                'pbn_epochs': this.state.model_pbn_epochs,
                 'pbn_n_clusters': parseInt(this.state.model_pbn_n_clusters),
                 'pbn_w': parseFloat(this.state.model_pbn_w),
                 'pbn_lr': parseFloat(this.state.model_pbn_lr),
                 'pbn_dropout': parseFloat(this.state.model_pbn_dropout),
                 'pbn_activation_fct': this.state.model_pbn_activation_fct,
                 'input_size': this.state.n_features_used,
-                'pbn_hidden_layers': this.state.pbn_hidden_layers
+                'pbn_hidden_layers': this.state.model_pbn_hidden_layers
             }
         }
         else if(this.state.selected_model === "tabularncd"){
             model_config = {
                 'model_name': this.state.selected_model,
 
+                'tabncd_epochs': parseInt(this.state.model_tabncd_epochs),
                 'tabncd_n_clusters': parseInt(this.state.model_tabncd_n_clusters),
                 // 'tabncd_cosine_topk': parseFloat(this.state.model_tabncd_cosine_topk),
                 'tabncd_w1': parseFloat(this.state.model_tabncd_w1),
                 'tabncd_w2': parseFloat(this.state.model_tabncd_w2),
-                'tabncd_classifier_lr': parseFloat(this.state.model_tabncd_classifier_lr),
-                'tabncd_cluster_lr': parseFloat(this.state.model_tabncd_cluster_lr),
+                'tabncd_lr': parseFloat(this.state.model_tabncd_lr),
+                'tabncd_topk': parseFloat(this.state.model_tabncd_topk),
                 'tabncd_k_neighbors': parseInt(this.state.model_tabncd_k_neighbors),
                 'tabncd_dropout': parseFloat(this.state.model_tabncd_dropout),
                 'tabncd_activation_fct': this.state.model_tabncd_activation_fct,
-                'tabncd_hidden_layers':  Array.prototype.concat(
-                    this.state.n_features_used,
-                    this.state.model_tabncd_hidden_layers)
+                'input_size': this.state.n_features_used,
+                'tabncd_hidden_layers': this.state.model_tabncd_hidden_layers
             }
         }
         else if(this.state.selected_model === "k_means"){
@@ -619,6 +639,7 @@ class FullPage extends React.Component {
             model_config = {
                 'model_name': this.state.selected_model,
 
+                'projection_in_classifier_epochs' : parseInt(this.state.model_projection_in_classifier_epochs),
                 'projection_in_classifier_n_clusters' : parseInt(this.state.model_projection_in_classifier_n_clusters),
                 'projection_in_classifier_architecture' : Array.prototype.concat(
                     this.state.n_features_used,
@@ -633,6 +654,8 @@ class FullPage extends React.Component {
             fireSwalError("Model not implemented yet")
             return
         }
+
+        console.log(model_config)
 
         // Build the request
         const requestOptions = {
@@ -671,7 +694,7 @@ class FullPage extends React.Component {
                 }
                 if (serverPromise.status === 200) {
                     // These models take time to train, so we only get the background thread ID to update a progress bar
-                    if(this.state.selected_model === "projection_in_classifier" || this.state.selected_model === "tabularncd"){
+                    if(this.state.selected_model === "projection_in_classifier" || this.state.selected_model === "tabularncd" || this.state.selected_model === "pbn"){
                         serverPromise.json().then((server_response => {
                             const thread_id = server_response["thread_id"]
 
@@ -782,6 +805,10 @@ class FullPage extends React.Component {
         this.setState({model_k_means_n_clusters: parseInt(event.target.value)})
     }
 
+    on_pbn_epochs_change = (event) => {
+        this.setState({model_pbn_epochs: parseInt(event.target.value)})
+    }
+
     on_pbn_n_clusters_change = (event) => {
         this.setState({model_pbn_n_clusters: parseInt(event.target.value)})
     }
@@ -802,6 +829,10 @@ class FullPage extends React.Component {
         this.setState({model_pbn_activation_fct: event.target.value})
     }
 
+    on_tabncd_epochs_change = (event) => {
+        this.setState({model_tabncd_epochs: parseInt(event.target.value)})
+    }
+
     on_tabncd_n_clusters_change = (event) => {
         this.setState({model_tabncd_n_clusters: parseInt(event.target.value)})
     }
@@ -818,12 +849,12 @@ class FullPage extends React.Component {
         this.setState({model_tabncd_w2: parseFloat(event.target.value)})
     }
 
-    on_tabncd_classifier_lr_change = (event) => {
-        this.setState({model_tabncd_classifier_lr: parseFloat(event.target.value)})
+    on_tabncd_lr_change = (event) => {
+        this.setState({model_tabncd_lr: parseFloat(event.target.value)})
     }
 
-    on_tabncd_cluster_lr_change = (event) => {
-        this.setState({model_tabncd_cluster_lr: parseFloat(event.target.value)})
+    on_tabncd_topk_change = (event) => {
+        this.setState({model_tabncd_topk: parseFloat(event.target.value)})
     }
 
     on_tabncd_k_neighbors_change = (event) => {
@@ -1094,6 +1125,8 @@ class FullPage extends React.Component {
                                         n_features_used={this.state.n_features_used}
                                         n_known_classes={this.state.n_known_classes}
 
+                                        on_pbn_epochs_change={this.on_pbn_epochs_change}
+                                        pbn_epochs={this.state.model_pbn_epochs}
                                         on_pbn_n_clusters_change={this.on_pbn_n_clusters_change}
                                         pbn_n_clusters={this.state.model_pbn_n_clusters}
                                         on_pbn_w_change={this.on_pbn_w_change}
@@ -1107,6 +1140,8 @@ class FullPage extends React.Component {
                                         on_pbn_add_layer_button_click={this.on_pbn_add_layer_button_click}
                                         on_pbn_remove_layer_button_click={this.on_pbn_remove_layer_button_click}
 
+                                        on_tabncd_epochs_change={this.on_tabncd_epochs_change}
+                                        tabncd_epochs={this.state.model_tabncd_epochs}
                                         on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
                                         tabncd_n_clusters={this.state.model_tabncd_n_clusters}
                                         on_tabncd_cosine_topk_change={this.on_tabncd_cosine_topk_change}
@@ -1115,10 +1150,10 @@ class FullPage extends React.Component {
                                         tabncd_w1={this.state.model_tabncd_w1}
                                         on_tabncd_w2_change={this.on_tabncd_w2_change}
                                         tabncd_w2={this.state.model_tabncd_w2}
-                                        on_tabncd_classifier_lr_change={this.on_tabncd_classifier_lr_change}
-                                        tabncd_classifier_lr={this.state.model_tabncd_classifier_lr}
-                                        on_tabncd_cluster_lr_change={this.on_tabncd_cluster_lr_change}
-                                        tabncd_cluster_lr={this.state.model_tabncd_cluster_lr}
+                                        on_tabncd_topk_change={this.on_tabncd_topk_change}
+                                        tabncd_topk={this.state.model_tabncd_topk}
+                                        on_tabncd_lr_change={this.on_tabncd_lr_change}
+                                        tabncd_lr={this.state.model_tabncd_lr}
                                         on_tabncd_k_neighbors_change={this.on_tabncd_k_neighbors_change}
                                         tabncd_k_neighbors={this.state.model_tabncd_k_neighbors}
                                         on_tabncd_dropout_change={this.on_tabncd_dropout_change}
@@ -1137,6 +1172,8 @@ class FullPage extends React.Component {
                                         on_spectral_clustering_affinity_change={this.on_spectral_clustering_affinity_change}
                                         spectral_clustering_affinity={this.state.model_spectral_clustering_affinity}
 
+                                        on_projection_in_classifier_epochs_change = {this.on_projection_in_classifier_epochs_change}
+                                        projection_in_classifier_epochs = {this.state.model_projection_in_classifier_epochs}
                                         on_projection_in_classifier_n_clusters_change = {this.on_projection_in_classifier_n_clusters_change}
                                         projection_in_classifier_n_clusters = {this.state.model_projection_in_classifier_n_clusters}
                                         projection_in_classifier_hidden_layers = {this.state.model_projection_in_classifier_hidden_layers}

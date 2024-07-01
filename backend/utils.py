@@ -75,423 +75,6 @@ def get_simple_layer(size_in, size_out, add_dropout=True, p_dropout=0.3, activat
     return simple_layer
 
 
-def pretext_generator(m, x):
-    """
-    Generation of corrupted samples.
-    This is a sped up version of the original pretext_generator of VIME's code.
-    It is about 5 times faster and should be equivalent.
-
-    :param m: The corruption mask, np.array with shape (n_samples, n_features).
-    :param x: The set to corrupt, np.array with shape (n_samples, n_features).
-    :return:
-        m_new: The new corruption mask, np.array with shape (n_samples, n_features).
-        x_tilde: The corrupted samples, np.array with shape (n_samples, n_features).
-    """
-    # Randomly (and column-wise) shuffle data
-    x_bar = x.copy()
-    np.random.shuffle(x_bar)
-
-    # Corrupt samples
-    x_tilde = x * (1 - m) + x_bar * m
-
-    # Define new mask matrix (as it is possible that the corrupted samples are the same as the original ones)
-    m_new = 1 * (x != x_tilde)
-
-    return m_new, x_tilde
-
-
-def pretext_generator_fixed(m, x):
-    """
-    Generation of corrupted samples.
-    This is a sped up version of the original pretext_generator of VIME's code.
-    It is about 2 times faster and it is equivalent.
-
-    :param m: The corruption mask, np.array with shape (n_samples, n_features).
-    :param x: The set to corrupt, np.array with shape (n_samples, n_features).
-    :return:
-        m_new: The new corruption mask, np.array with shape (n_samples, n_features).
-        x_tilde: The corrupted samples, np.array with shape (n_samples, n_features).
-    """
-    # Randomly (and column-wise) shuffle data
-    no, dim = x.shape
-    x_bar = np.zeros([no, dim])
-    for i in range(dim):
-        tmp = x[:, i].copy()
-        np.random.shuffle(tmp)
-        x_bar[:, i] = tmp
-
-    # Corrupt samples
-    x_tilde = x * (1 - m) + x_bar * m
-
-    # Define new mask matrix (as it is possible that the corrupted samples are the same as the original ones)
-    m_new = 1 * (x != x_tilde)
-
-    return m_new, x_tilde
-
-
-def vime_loss(mask_pred, mask_true, feature_pred, batch_x_train):
-    """
-    Note that all the inputs should have values between 0 and 1.
-
-    :param mask_pred: The predicted corruption mask, torch.Tensor of shape (n_samples, n_features).
-    :param mask_true: The true corruption mask, torch.Tensor of shape (n_samples, n_features).
-    :param feature_pred: The reconstructed values of x, torch.Tensor of shape (n_samples, n_features).
-    :param batch_x_train: The original (uncorrupted) values of x, torch.Tensor of shape (n_samples, n_features).
-    :return:
-        mask_loss: The mean binary cross-entropy loss of the mask estimation.
-        feature_loss: The mean binary cross-entropy loss of the feature estimation.
-    """
-    mask_loss = nn.BCELoss()(mask_pred, mask_true)
-    feature_loss = nn.MSELoss()(feature_pred, batch_x_train)
-    return mask_loss, feature_loss
-
-
-def evaluate_vime_model_on_set(x_input, model, device, batch_size=100, p_m=0.3):
-    """
-    Method that evaluates the feature and mask estimation of corrupted samples of the given model on x_input.
-
-    :param x_input: The input dataset, torch.Tensor of shape (n_samples, n_features).
-    :param model: The model to evaluate, torch.nn.Module.
-    :param device: The device to send the dataset to, torch.device.
-    :param p_m: The corruption probability, int.
-    :param batch_size: The batch size (default=100, reduce if GPU is low on memory), int.
-    :return:
-        mean_mask_loss: The mean mask estimation loss, float.
-        mean_feature_loss: The mean feature estimation loss, float.
-    """
-    mask_losses, feature_losses = [], []
-    test_batch_start_index, test_batch_end_index = 0, batch_size
-    for batch_index in range(math.ceil((x_input.shape[0]) / batch_size)):
-        batch_x_input = x_input[test_batch_start_index:test_batch_end_index]
-
-        m_unlab = np.random.binomial(1, p_m, batch_x_input.shape)
-        m_label, x_tilde = pretext_generator(m_unlab, batch_x_input.to('cpu').numpy())
-        x_tilde = torch.Tensor(x_tilde).to(device)
-        m_label = torch.Tensor(m_label).to(device)
-
-        model.eval()
-        with torch.no_grad():
-            mask_pred, feature_pred = model.vime_forward(x_tilde)
-        model.train()
-
-        mask_loss, feature_loss = vime_loss(mask_pred, m_label, feature_pred, batch_x_input)
-        mask_losses.append(mask_loss.item())
-        feature_losses.append(feature_loss.item())
-
-        test_batch_start_index += batch_size
-        test_batch_end_index = test_batch_end_index + batch_size if test_batch_end_index + batch_size < x_input.shape[0] else x_input.shape[0]
-
-    return np.mean(mask_losses), np.mean(feature_losses)
-
-
-def vime_training(x_vime, model, device, p_m=0.3, alpha=2.0, lr=0.001, num_epochs=30, batch_size=128, fixed_corruption=False):
-    # x_test, compute_lr_accuracy=False, x_train_known=None, y_train_known=None, x_test_known=None, y_test_known=None,
-    """
-    :param p_m: Loss_tot = Corruption probability
-    :param alpha: Loss_tot = mask_estim_loss + alpha * feature_estim_loss
-    """
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
-
-    losses_dict = {
-        'epoch_mean_train_losses': [],
-        'epoch_mean_test_losses': [],
-        'epoch_mean_lr_projection_score': [],
-        'lr_base_projection_score': None
-    }
-
-    n_batchs = math.ceil((x_vime.shape[0]) / batch_size)
-
-    for epoch in range(num_epochs):
-        # t.set_description("Epoch " + str(epoch + 1) + " / " + str(num_epochs))
-        train_losses = []
-        mask_losses = []
-        feature_losses = []
-
-        batch_start_index, batch_end_index = 0, min(batch_size, len(x_vime))
-        for batch_index in range(n_batchs):
-            batch_X_train = x_vime[batch_start_index:batch_end_index]
-
-            m_unlab = np.random.binomial(1, p_m, batch_X_train.shape)
-            if fixed_corruption is False:
-                m_label, x_tilde = pretext_generator(m_unlab, batch_X_train.to('cpu').numpy())
-            else:
-                m_label, x_tilde = pretext_generator_fixed(m_unlab, batch_X_train.to('cpu').numpy())
-
-            x_tilde = torch.Tensor(x_tilde).to(device)
-            m_label = torch.Tensor(m_label).to(device)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward
-            mask_pred, feature_pred = model.vime_forward(x_tilde)
-
-            # compute losses
-            mask_loss, feature_loss = vime_loss(mask_pred, m_label, feature_pred, batch_X_train)
-            loss = mask_loss + alpha * feature_loss
-
-            # backward
-            loss.backward()
-
-            # update the weights using gradient descent
-            optimizer.step()
-
-            # Save loss for plotting purposes
-            train_losses.append(loss.item())
-            mask_losses.append(mask_loss.item())
-            feature_losses.append(feature_loss.item())
-
-            # print statistics
-            # t.set_postfix_str("loss={:05.3f}".format(np.mean(train_losses)) +
-            #                   " - mask_loss={:05.3f}".format(np.mean(mask_losses)) +
-            #                   " - feature_loss={:05.3f}".format(np.mean(feature_losses)))
-            # t.update()
-            batch_start_index += batch_size
-            batch_end_index = min((batch_end_index + batch_size), x_vime.shape[0])
-
-        # Evaluate on the test set
-        # test_mask_loss, test_feature_loss = evaluate_vime_model_on_set(x_test, model, device)
-        # test_loss = test_mask_loss + alpha * test_feature_loss
-
-        losses_dict['epoch_mean_train_losses'].append(np.mean(train_losses))
-        # losses_dict['epoch_mean_test_losses'].append(test_loss.item())
-
-    return losses_dict
-
-
-def fine_tuning_training(x_sup, y_sup, x_test, y_test, model, device, batch_size=128, num_epochs=10, lr=0.001):
-    """
-    The fine tuning (step 2) of the representation on the known classes.
-    :param x_sup: The training instances from known classes (and the meta class composed of the unknown classes).
-    :param y_sup: The labels of x_sup.
-    :param x_test: The test data (known classes + the meta class composed of the unknown classes).
-    :param y_test: The labels of x_test.
-    :param model: torch.nn.Module : The model to train.
-    :param device: torch.device : The device.
-    :param batch_size: int : The batch size.
-    :param num_epochs: int : The number of training steps.
-    :param lr: float : The learning rate.
-    :return: todo
-    """
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
-
-    losses_dict = {
-        'epoch_mean_train_losses': [],
-        'epoch_mean_test_losses': [],
-        'epoch_mean_train_acc': [],
-        'epoch_mean_test_acc': []
-    }
-
-    for epoch in range(num_epochs):
-        n_batchs = math.ceil((x_sup.shape[0]) / batch_size)
-        # t.set_description("Epoch " + str(epoch + 1) + " / " + str(num_epochs))
-        train_losses = []
-
-        batch_start_index, batch_end_index = 0, min(batch_size, len(x_sup))
-        for batch_index in range(n_batchs):
-            batch_x_train = x_sup[batch_start_index:batch_end_index]
-            batch_y_train = y_sup[batch_start_index:batch_end_index]
-            batch_y_train = torch.tensor(batch_y_train, dtype=torch.int64, device=device)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward
-            encoded_batch_x = model.encoder_forward(batch_x_train)
-            y_pred = model.classification_head_forward(encoded_batch_x)
-
-            # compute loss
-            supervised_loss = nn.CrossEntropyLoss()(y_pred, batch_y_train)
-
-            # backward
-            supervised_loss.backward()
-
-            # update the weights using gradient descent
-            optimizer.step()
-
-            # Save loss for plotting purposes
-            train_losses.append(supervised_loss.item())
-
-            # print statistics
-            # t.set_postfix_str("loss={:05.3f}".format(np.mean(train_losses)))
-            # t.update()
-            batch_start_index += batch_size
-            batch_end_index = min((batch_end_index + batch_size), x_sup.shape[0])
-
-        # Evaluate on the test set
-        tmp_y_test = torch.tensor(y_test, dtype=torch.int64, device=device)
-        test_loss = evaluate_supervised_model_on_set(x_test, tmp_y_test, model)
-
-        train_classification_accuracy = compute_classification_accuracy(x_sup, y_sup, y_sup, model)
-        losses_dict['epoch_mean_train_acc'].append(train_classification_accuracy)
-        test_classification_accuracy = compute_classification_accuracy(x_test, tmp_y_test.cpu().numpy(), y_sup, model)
-        losses_dict['epoch_mean_test_acc'].append(test_classification_accuracy)
-
-        losses_dict['epoch_mean_train_losses'].append(np.mean(train_losses))
-        losses_dict['epoch_mean_test_losses'].append(test_loss.item())
-
-    return losses_dict
-
-
-def compute_classification_accuracy(x_test, y_test, y_train, model):
-    """
-    ToDo : Documentation
-    """
-    # Define a mapping of the train classes, as they may not range from 0 to C
-    mapper, ind = np.unique(y_train, return_inverse=True)
-
-    x_test_known_mask = np.in1d(y_test, np.unique(y_train))
-    x_test_known = x_test[x_test_known_mask]
-    y_test_known = y_test[x_test_known_mask]
-
-    model.eval()
-    with torch.no_grad():
-        # Forward the classification head only for known classes
-        x_test_known_projection = model.encoder_forward(x_test_known)
-        model_y_test_known_pred = model.classification_head_forward(x_test_known_projection)
-    model.train()
-
-    model_y_test_known_pred = F.softmax(model_y_test_known_pred, -1)  # Apply softmax
-    model_y_test_known_pred = torch.argmax(model_y_test_known_pred, dim=1)  # Get the prediction from the probabilities
-    model_y_test_known_pred = mapper[model_y_test_known_pred.cpu().numpy()]  # Map the prediction back to the true labels
-
-    return accuracy_score(y_test_known, model_y_test_known_pred)
-
-
-def evaluate_supervised_model_on_set(x_input, y_input, model, batch_size=100):
-    """
-    Method that evaluates the classification loss of the given model on x_input.
-
-    :param x_input: The input dataset, np.array with shape (n_samples, n_features).
-    :param y_input: The labels of the dataset, np.array with shape (n_samples,).
-    :param model: The model to evaluate, torch.nn.Module.
-    :param batch_size: The batch size (default=100, reduce if GPU is low on memory), int.
-    :return:
-        The mean classification loss, float.
-    """
-    losses = []
-    test_batch_start_index, test_batch_end_index = 0, batch_size
-    for batch_index in range(math.ceil((x_input.shape[0]) / batch_size)):
-        batch_x = x_input[test_batch_start_index:test_batch_end_index]
-        batch_y = y_input[test_batch_start_index:test_batch_end_index]
-
-        model.eval()
-        with torch.no_grad():
-            encoded_batch_x = model.encoder_forward(batch_x)
-            batch_y_pred = model.classification_head_forward(encoded_batch_x)
-        model.train()
-
-        supervised_loss = nn.CrossEntropyLoss()(batch_y_pred, batch_y)
-        losses.append(supervised_loss.item())
-
-        test_batch_start_index += batch_size
-        test_batch_end_index = test_batch_end_index + batch_size if test_batch_end_index + batch_size < x_input.shape[0] else x_input.shape[0]
-
-    return np.mean(losses)
-
-
-def compute_clustering_accuracy(x_test, y_test, y_unlab, model):
-    """
-    Compute the clustering accuracy.
-    The computation is based on the assignment of the most probable clusters using scipy's linear_sum_assignment.
-
-    :param x_test: ToDo : Documentation
-    :param y_test: ToDo : Documentation
-    :param y_unlab: ToDo : Documentation
-    :param model: ToDo : Documentation
-    :return: Accuracy between 0 and 1.
-    """
-    # (1) Get the prediction of the model
-    x_test_unknown_mask = np.in1d(y_test, np.unique(y_unlab))
-    x_test_unknown = x_test[x_test_unknown_mask]
-    y_test_unknown = y_test[x_test_unknown_mask]
-
-    model.eval()
-    with torch.no_grad():
-        x_test_unknown_projection = model.encoder_forward(x_test_unknown)
-        model_y_test_unknown_pred = model.clustering_head_forward(x_test_unknown_projection)
-    model.train()
-
-    model_y_test_unknown_pred = F.softmax(model_y_test_unknown_pred, -1)
-    model_y_test_unknown_pred = torch.argmax(model_y_test_unknown_pred, dim=1)
-    model_y_test_unknown_pred = model_y_test_unknown_pred.cpu().numpy()
-
-    # (2) Compute the clustering accuracy using the hungarian algorithm
-    y_test_unknown = y_test_unknown.astype(np.int64)
-    assert model_y_test_unknown_pred.size == y_test_unknown.size
-    D = max(model_y_test_unknown_pred.max(), y_test_unknown.max()) + 1
-    w = np.zeros((D, D), dtype=np.int64)
-    for i in range(model_y_test_unknown_pred.size):
-        w[model_y_test_unknown_pred[i], y_test_unknown[i]] += 1
-    ind = linear_assignment(w.max() - w)  # The hungarian algorithm
-
-    acc = sum([w[i, j] for i, j in zip(ind[0], ind[1])]) * 1.0 / model_y_test_unknown_pred.size
-
-    return acc
-
-
-def compute_balanced_clustering_accuracy(x_test, y_test, y_unlab, model):
-    """
-    Compute the clustering accuracy.
-    The computation is based on the assignment of the most probable clusters using scipy's linear_sum_assignment.
-
-    :param x_test: ToDo : Documentation
-    :param y_test: ToDo : Documentation
-    :param y_unlab: ToDo : Documentation
-    :param model: ToDo : Documentation
-    :return: Accuracy between 0 and 1.
-    """
-    # (1) Get the prediction of the model
-    x_test_unknown_mask = np.in1d(y_test, np.unique(y_unlab))
-    x_test_unknown = x_test[x_test_unknown_mask]
-    y_test_unknown = y_test[x_test_unknown_mask]
-
-    model.eval()
-    with torch.no_grad():
-        x_test_unknown_projection = model.encoder_forward(x_test_unknown)
-        model_y_test_unknown_pred = model.clustering_head_forward(x_test_unknown_projection)
-    model.train()
-
-    model_y_test_unknown_pred = F.softmax(model_y_test_unknown_pred, -1)
-    model_y_test_unknown_pred = torch.argmax(model_y_test_unknown_pred, dim=1)
-    model_y_test_unknown_pred = model_y_test_unknown_pred.cpu().numpy()
-
-    # (2) Compute the clustering accuracy using the hungarian algorithm
-    y_test_unknown = y_test_unknown.astype(np.int64)
-    assert model_y_test_unknown_pred.size == y_test_unknown.size
-    D = max(model_y_test_unknown_pred.max(), y_test_unknown.max()) + 1
-    w = np.zeros((D, D), dtype=np.int64)
-    for i in range(model_y_test_unknown_pred.size):
-        w[model_y_test_unknown_pred[i], y_test_unknown[i]] += 1
-    ind = linear_assignment(w.max() - w)  # The hungarian algorithm
-
-    # Balanced accuracy
-    permutations_dict = dict(zip(ind[0], ind[1]))
-    return balanced_accuracy_score(y_test_unknown, list(map(permutations_dict.get, model_y_test_unknown_pred)))
-
-
-def compute_ari_and_nmi(x_test, y_test, y_unlab, model):
-    """
-    ToDo Documentation
-    """
-    x_test_known_mask = np.in1d(y_test, np.unique(y_unlab))
-    x_test_known = x_test[x_test_known_mask]
-    y_test_known = y_test[x_test_known_mask]
-
-    model.eval()
-    with torch.no_grad():
-        model_y_test_known_pred = model.clustering_head_forward(model.encoder_forward(x_test_known))
-    model.train()
-    model_y_test_known_pred = F.softmax(model_y_test_known_pred, -1)
-    model_y_test_known_pred = torch.argmax(model_y_test_known_pred, dim=1)
-
-    # Both metrics are independent of the absolute values of the labels
-    # So a permutation of the class or cluster label values won’t change the score value in any way.
-    ari = adjusted_rand_score(y_test_known, model_y_test_known_pred.cpu().numpy())
-    nmi = normalized_mutual_info_score(y_test_known, model_y_test_known_pred.cpu().numpy())
-    return ari, nmi
-
-
 def unsupervised_classification_loss(y_pred_1, y_pred_2, labels, eps=1e-7):
     """
     The intuition is that for each pair of samples, if their label is 1, we want the predicted
@@ -512,27 +95,6 @@ def unsupervised_classification_loss(y_pred_1, y_pred_2, labels, eps=1e-7):
     x = prob_1.mul(prob_2)  # We multiply the prediction of each vector between each other (so same shape is outputted)
     x = x.sum(1)  # We sum the results of each row. If the predictions of the same class were high, the result is close to 1
     return - torch.mean(labels.mul(x.add(eps).log()) + (1 - labels).mul((1 - x).add(eps).log()))  # BCE
-
-
-def ranking_stats_pseudo_labels(encoded_x_unlab, device, topk=5):
-    rank_idx = torch.argsort(encoded_x_unlab, dim=1, descending=True)
-    rank_idx1, rank_idx2 = PairEnum(rank_idx)
-    rank_idx1, rank_idx2 = rank_idx1[:, :topk], rank_idx2[:, :topk]
-    rank_idx1, _ = torch.sort(rank_idx1, dim=1)
-    rank_idx2, _ = torch.sort(rank_idx2, dim=1)
-    rank_diff = rank_idx1 - rank_idx2
-    rank_diff = torch.sum(torch.abs(rank_diff), dim=1)
-    target_ulb = torch.ones_like(rank_diff).float().to(device)
-    target_ulb[rank_diff > 0] = 0
-    return target_ulb
-
-
-def PairEnum(x):
-    # Enumerate all pairs of feature in x
-    assert x.ndimension() == 2, 'Input dimension must be 2'
-    x1 = x.repeat(x.size(0), 1)
-    x2 = x.repeat(1, x.size(0)).view(-1, x.size(1))
-    return x1, x2
 
 
 def get_error_count_for_topk(pairwise_similarity_matrix, ground_truth_matrix, pseudo_labeling_method, top_k, device, unlab_indexes=None):
@@ -638,14 +200,21 @@ def custom_golden_section_search(pairwise_similarity_matrix, ground_truth_matrix
         return (c + b) / 2  # (c, b)
 
 
-def smotenc_transform_batch_2(batch, cat_columns_indexes, data_queue, device, k_neighbors=5, dist='cosine',
+def pairwise_cosine_similarity(input_a, input_b):
+    normalized_input_a = torch.nn.functional.normalize(input_a)
+    normalized_input_b = torch.nn.functional.normalize(input_b)
+    res = torch.mm(normalized_input_a, normalized_input_b.T)
+    return res
+
+
+def smotenc_transform_batch_2(batch, cat_columns_indices, data_queue, device, k_neighbors=5, dist='cosine',
                               batch_size=100):
     """
     Faster but harder to understand vectorized transformation for mixed numerical and categorical data.
     See 'smotenc_transform_batch' to really understand the logic.
     Inspired from SMOTE-NC.
     :param batch: torch.Tensor : The batch data to transform.
-    :param cat_columns_indexes: Array-like object of the indexes of the categorical columns.
+    :param cat_columns_indices: Array-like object of the indexes of the categorical columns.
     Only useful when transform_method='new_2'.
     :param data_queue: The unlabelled data stored in the unlab_memory_module object.
     :param device: torch.device : The device.
@@ -662,7 +231,7 @@ def smotenc_transform_batch_2(batch, cat_columns_indexes, data_queue, device, k_
     batch_start_index, batch_end_index = 0, min(batch_size, len(full_data))
     for batch_index in range(n_batchs):
         if dist == 'cosine':
-            similarities = F.cosine_similarity(batch.unsqueeze(1), full_data[batch_start_index:batch_end_index], dim=-1)
+            similarities = pairwise_cosine_similarity(batch, full_data[batch_start_index:batch_end_index])
         elif dist == 'euclidean':
             # ToDo (below is the non-vectorized code)
             # similarities = torch.cdist(batch[i].view(1, -1), full_data)
@@ -675,21 +244,26 @@ def smotenc_transform_batch_2(batch, cat_columns_indexes, data_queue, device, k_
         batch_start_index += batch_size
         batch_end_index = min((batch_end_index + batch_size), full_data.shape[0])
 
-    full_similarities_matrix -= torch.eye(len(batch), len(full_data), device=device)  # This way, itself wont be in the most similar instances
+    full_similarities_matrix -= torch.eye(len(batch), len(full_data), device=device)  # This way, itself won't be in the most similar instances
+
+    if k_neighbors > full_similarities_matrix.shape[1]:
+        print(f"Clipping k_neighbors={k_neighbors} to new max value {full_similarities_matrix.shape[1]}")
+        k_neighbors = full_similarities_matrix.shape[1]
 
     batch_topk_similar_indexes = full_similarities_matrix.topk(k=k_neighbors, dim=1).indices
 
     # Select a random point between the k closest
-    batch_closest_point_index = torch.gather(batch_topk_similar_indexes, 1, torch.randint(low=0, high=k_neighbors, size=(len(batch),), device=device).view(-1, 1))
-    batch_closest_point_index = batch_closest_point_index.flatten()
+    selected_points_indices = torch.gather(batch_topk_similar_indexes, 1, torch.randint(low=0, high=k_neighbors, size=(len(batch),), device=device).view(-1, 1))
+    selected_points_indices = selected_points_indices.flatten()
 
-    batch_closest_point = full_data[batch_closest_point_index]
+    selected_points = full_data[selected_points_indices]
 
-    batch_diff_vect = (batch_closest_point - batch) * torch.rand(len(batch), device=device).view(-1, 1)
+    batch_diff_vect = (selected_points - batch) * torch.rand(len(batch), device=device).view(-1, 1)
 
     augmented_batch = batch + batch_diff_vect  # At this point, the categorical values are wrong, next line fixes that
 
-    if len(cat_columns_indexes) > 0:
-        augmented_batch[:, cat_columns_indexes] = full_data[:, cat_columns_indexes.flatten()][batch_topk_similar_indexes].mode(1).values
+    if cat_columns_indices is not None and len(cat_columns_indices) > 0:
+        # The categorical features become the most represented value among the k neighbors
+        augmented_batch[:, cat_columns_indices] = full_data[:, cat_columns_indices][batch_topk_similar_indexes].mode(1).values
 
     return augmented_batch

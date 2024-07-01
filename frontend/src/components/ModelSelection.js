@@ -60,6 +60,9 @@ class ModelSelection extends React.Component {
                                 n_features_used={this.props.n_features_used}
                                 n_known_classes={this.props.n_known_classes}
 
+                                on_pbn_epochs_change={this.props.on_pbn_epochs_change}
+                                pbn_epochs_value={this.props.pbn_epochs}
+
                                 on_pbn_n_clusters_change={this.props.on_pbn_n_clusters_change}
                                 pbn_n_clusters_value={this.props.pbn_n_clusters}
 
@@ -84,6 +87,9 @@ class ModelSelection extends React.Component {
                                 n_features_used={this.props.n_features_used}
                                 n_known_classes={this.props.n_known_classes}
 
+                                on_tabncd_epochs_change={this.props.on_tabncd_epochs_change}
+                                tabncd_epochs_value={this.props.tabncd_epochs}
+
                                 on_tabncd_n_clusters_change={this.props.on_tabncd_n_clusters_change}
                                 tabncd_n_clusters_value={this.props.tabncd_n_clusters}
 
@@ -96,11 +102,11 @@ class ModelSelection extends React.Component {
                                 on_tabncd_w2_change={this.props.on_tabncd_w2_change}
                                 tabncd_w2_value={this.props.tabncd_w2}
 
-                                on_tabncd_classifier_lr_change={this.props.on_tabncd_classifier_lr_change}
-                                tabncd_classifier_lr_value={this.props.tabncd_classifier_lr}
+                                on_tabncd_topk_change={this.props.on_tabncd_topk_change}
+                                tabncd_topk_value={this.props.tabncd_topk}
 
-                                on_tabncd_cluster_lr_change={this.props.on_tabncd_cluster_lr_change}
-                                tabncd_cluster_lr_value={this.props.tabncd_cluster_lr}
+                                on_tabncd_lr_change={this.props.on_tabncd_lr_change}
+                                tabncd_lr_value={this.props.tabncd_lr}
 
                                 on_tabncd_k_neighbors_change={this.props.on_tabncd_k_neighbors_change}
                                 tabncd_k_neighbors_value={this.props.tabncd_k_neighbors}
@@ -135,6 +141,8 @@ class ModelSelection extends React.Component {
                                 n_features_used = {this.props.n_features_used}
                                 n_known_classes = {this.props.n_known_classes}
 
+                                on_projection_in_classifier_epochs_change = {this.props.on_projection_in_classifier_epochs_change}
+                                projection_in_classifier_epochs = {this.props.projection_in_classifier_epochs}
                                 on_projection_in_classifier_n_clusters_change = {this.props.on_projection_in_classifier_n_clusters_change}
                                 projection_in_classifier_n_clusters = {this.props.projection_in_classifier_n_clusters}
                                 projection_in_classifier_hidden_layers = {this.props.projection_in_classifier_hidden_layers}

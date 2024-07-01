@@ -21,7 +21,7 @@ const KMeansParameters = (props) => {
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
                            min={0}
-                           placeholder="Number of clusters"
+                           placeholder="n clusters"
                            step={1}
                            onChange={props.on_kmeans_n_clusters_change}
                            defaultValue={props.k_means_n_clusters}

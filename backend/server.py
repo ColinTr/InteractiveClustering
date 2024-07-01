@@ -3,9 +3,11 @@ Orange Labs
 Authors : Colin Troisemaine
 Maintainer : colin.troisemaine@gmail.com
 """
+from models.PBNModel import PBNModel
 from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
 from models.TabularNCDThreadedTrainingTask import TabularNCDThreadedTrainingTask
 from models.ProjectionInClassifierModel import ProjectionInClassifierModel
+from models.PBNThreadedTrainingTask import PBNThreadedTrainingTask
 from sklearn.cluster import KMeans, SpectralClustering
 from flask import Flask, jsonify, request, send_file
 from models.TabularNCDModel import TabularNCDModel
@@ -402,19 +404,67 @@ def runClustering():
 
         return graphJSON
 
+    elif model_name == "pbn":
+        # 1) Define the model
+        model = PBNModel(input_size=model_config['input_size'],
+                         pbn_hidden_layers=model_config['pbn_hidden_layers'],
+                         n_known_classes=len(known_classes),
+                         n_clusters=model_config['pbn_n_clusters'],
+                         use_norm='l2',
+                         use_batchnorm=True,
+                         activation_fct=model_config['pbn_activation_fct'],
+                         p_dropout=model_config['pbn_dropout'],
+                         app=app,
+                         USE_CUDA=USE_CUDA)
+
+        # 2) Define the training datasets
+        y = np.array(dataset[target_name])
+        y = y[known_mask + unknown_mask]
+        mapper, ind = np.unique(y, return_inverse=True)
+        mapping_dict = dict(zip(y, ind))
+        y_mapped = np.array(list(map(mapping_dict.get, y)))
+
+        device = utils.setup_device(app, use_cuda=USE_CUDA)
+        x_full = torch.tensor(filtered_dataset[known_mask + unknown_mask], dtype=torch.float, device=device)
+        y_full = np.repeat(-1, len(x_full))
+        new_known_mask = np.in1d(y, known_classes)
+        y_full[new_known_mask] = y_mapped[new_known_mask]
+
+        # So that the classification target labels are in {0; ...; |Cl|+1}
+        y_full_classifier = y_full.astype(np.int64).copy()
+        y_full_classifier[y_full_classifier == -1] = 99999
+        classifier_mapper, classifier_ind = np.unique(y_full_classifier, return_inverse=True)
+        classifier_mapping_dict = dict(zip(y_full_classifier, classifier_ind))
+        y_train_classifier = np.array(list(map(classifier_mapping_dict.get, y_full_classifier)))
+
+        grouped_unknown_class_val = classifier_mapping_dict[99999]
+
+        # 3) Start training in a new thread to avoid blocking the server while training the model
+        new_thread = PBNThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes,
+                                             selected_features, random_state, color_by, model_config, model,
+                                             lr=model_config['pbn_lr'],
+                                             epochs=model_config['pbn_epochs'],
+                                             w=model_config["pbn_w"],
+                                             batch_size=512,
+                                             x_full=x_full,
+                                             y_train_classifier=y_train_classifier,
+                                             unknown_class_value=grouped_unknown_class_val)
+        new_thread.start()
+        # global running_threads
+        running_threads[new_thread.ident] = new_thread
+
+        return jsonify({"thread_id": new_thread.ident}), 200
+
     elif model_name == "tabularncd":
         # 1) Define the model
-        model = TabularNCDModel(app=app,
-                                encoder_layers_sizes=model_config["tabncd_hidden_layers"],
-                                ssl_layers_sizes=[],
-                                joint_learning_layers_sizes=[],
+        model = TabularNCDModel(input_size=model_config['input_size'],
+                                hidden_layers_sizes=model_config["tabncd_hidden_layers"],
                                 n_known_classes=len(known_classes) + 1,
                                 n_unknown_classes=model_config["tabncd_n_clusters"],
                                 activation_fct=model_config["tabncd_activation_fct"],
-                                encoder_last_activation_fct=None,
-                                ssl_last_activation_fct=None,
-                                joint_last_activation_fct=None,
                                 p_dropout=model_config["tabncd_dropout"],
+                                use_batchnorm=True,
+                                app=app,
                                 USE_CUDA=USE_CUDA)
 
         # 2) Define the training datasets
@@ -441,24 +491,18 @@ def runClustering():
 
         # 3) Start training in a new thread to avoid blocking the server while training the model
         new_thread = TabularNCDThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes,
-                                                    selected_features, random_state, color_by, model_config,
-                                                    corresponding_tsne_config_name, model,
-                                                    use_unlab=True,
-                                                    use_ssl=False,
+                                                    selected_features, random_state, color_by, model_config, model,
                                                     M=min(2000, sum(known_mask), sum(~known_mask)),
-                                                    lr_classif=model_config["tabncd_classifier_lr"],
-                                                    lr_cluster=model_config["tabncd_cluster_lr"],
-                                                    epochs=30,
+                                                    lr=model_config["tabncd_lr"],
+                                                    epochs=model_config["tabncd_epochs"],
                                                     k_neighbors=model_config["tabncd_k_neighbors"],
                                                     w1=model_config["tabncd_w1"],
                                                     w2=model_config["tabncd_w2"],
-                                                    p_m=0.3,
-                                                    alpha=2.0,
+                                                    topk=model_config["tabncd_topk"],
                                                     batch_size=512,
                                                     x_full=x_full,
                                                     y_train_classifier=y_train_classifier,
-                                                    grouped_unknown_class_val=grouped_unknown_class_val,
-                                                    cat_columns_indexes=[])
+                                                    unknown_class_value=grouped_unknown_class_val)
         new_thread.start()
         # global running_threads
         running_threads[new_thread.ident] = new_thread
@@ -487,8 +531,9 @@ def runClustering():
 
         # 3) Start training in a new thread to avoid blocking the server while training the model
         new_thread = ProjectionInClassifierThreadedTrainingTask(dataset_name, target_name, known_classes, unknown_classes, selected_features,
-                                                                random_state, color_by, model_config, corresponding_tsne_config_name, model,
-                                                                x_train, y_train_mapped, batch_size=256, num_epochs=30)
+                                                                random_state, color_by, model_config, model,
+                                                                x_train, y_train_mapped, batch_size=256,
+                                                                num_epochs=model_config['projection_in_classifier_epochs'])
         new_thread.start()
         # global running_threads
         running_threads[new_thread.ident] = new_thread

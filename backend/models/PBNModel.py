@@ -9,7 +9,8 @@ from models.fast_gpu_kmeans import fast_gpu_kmeans
 
 
 class PBNModel(nn.Module):
-    def __init__(self, input_size, pbn_hidden_layers, n_known_classes, n_clusters, use_norm, use_batchnorm, activation_fct, p_dropout, app, USE_CUDA):
+    def __init__(self, input_size, pbn_hidden_layers, n_known_classes, n_clusters,
+                 use_norm, use_batchnorm, activation_fct, p_dropout, app, USE_CUDA):
         """
         The PBN model object. It is composed of 3 main networks : The *encoder*, the *decoder* and the *classifier*.
         ToDo: Complete the documentation.
@@ -92,6 +93,8 @@ class PBNModel(nn.Module):
     def predict_new_data(self, x_unknown):
         self.eval()
         with torch.no_grad():
+            x_unknown = torch.tensor(x_unknown, device=self.device, dtype=torch.float)
+
             projected_x_unknown = self.encoder_layers(x_unknown)
 
             km = fast_gpu_kmeans(k_clusters=self.n_clusters)
@@ -108,98 +111,3 @@ class PBNModel(nn.Module):
             y_pred = F.softmax(y_pred, -1).argmax(dim=1)
         self.train()
         return accuracy_score(y_known, y_pred.cpu())
-
-    def train_on_known_classes(self,
-                               x_train, y_train, unknown_class_value,
-                               x_test_unknown, y_test_unknown,
-                               x_test_known, y_test_known,
-                               batch_size, lr, epochs, w, clustering_runs=10,
-                               n_clusters=None, disable_tqdm=False):
-        losses_dict = {
-            'train_losses': [],
-            'train_ce_losses': [],
-            'train_mse_losses': [],
-
-            'train_classification_accuracy': [],
-            'test_classification_accuracy': [],
-            'test_average_clustering_accuracy': [],
-        }
-
-        optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
-
-        ce_loss_func = nn.CrossEntropyLoss()
-        mse_loss_func = nn.MSELoss(reduction="sum")
-
-        n_batchs = math.ceil((x_train.shape[0]) / batch_size)
-
-        with tqdm(range(epochs * n_batchs), disable=disable_tqdm) as t:
-            for epoch in range(epochs):
-                t.set_description("Epoch " + str(epoch + 1) + " / " + str(epochs))
-
-                train_losses, train_ce_losses, train_mse_losses = [], [], []
-
-                batch_start_index, batch_end_index = 0, min(batch_size, len(x_train))
-                for batch_index in range(n_batchs):
-                    batch_x_train = x_train[batch_start_index:batch_end_index]
-                    batch_y_train = y_train[batch_start_index:batch_end_index]
-                    batch_y_train = torch.tensor(batch_y_train, dtype=torch.int64, device=x_train.device)
-                    mask_known = batch_y_train != unknown_class_value
-
-                    if len(batch_x_train) < 2:
-                        print("Skipping batch of size 1...")
-                        continue
-
-                    optimizer.zero_grad()
-
-                    # ========== forward ==========
-                    # (1) Encode all the data
-                    encoded_batch_x = self.encoder_forward(batch_x_train)
-
-                    # (2) Reconstruct all the data
-                    reconstructed_batch_x = self.decoder_forward(encoded_batch_x)
-
-                    # (3) Learn to classify the known data only
-                    y_known_pred = self.classifier_forward(encoded_batch_x[mask_known])
-                    # =============================
-
-                    ce_loss = ce_loss_func(y_known_pred, batch_y_train[mask_known])
-                    mse_loss = mse_loss_func(reconstructed_batch_x, batch_x_train) / len(batch_x_train)
-
-                    full_loss = w * ce_loss + (1 - w) * mse_loss
-
-                    full_loss.backward()
-
-                    optimizer.step()
-
-                    # Save loss for plotting purposes
-                    train_losses.append(full_loss.item())
-                    train_ce_losses.append(ce_loss.item())
-                    train_mse_losses.append(mse_loss.item())
-
-                    t.set_postfix_str("full={:05.3f} | ce={:05.3f} | mse={:05.3f}".format(np.mean(train_losses),
-                                                                                          np.mean(train_ce_losses),
-                                                                                          np.mean(train_mse_losses)))
-                    t.update()
-
-                    batch_start_index += batch_size
-                    batch_end_index = min((batch_end_index + batch_size), x_train.shape[0])
-
-                losses_dict['train_losses'].append(np.mean(train_losses))
-                losses_dict['train_ce_losses'].append(np.mean(train_ce_losses))
-                losses_dict['train_mse_losses'].append(np.mean(train_mse_losses))
-
-                if x_test_unknown is not None and y_test_unknown is not None:
-                    self.eval()
-                    with torch.no_grad():
-                        # Run the clustering method a few times and average the results
-                        average_clust_acc = np.mean([hungarian_accuracy(np.array(self.predict_new_data(n_clusters, x_test_unknown, x_test_known, y_test_known)),
-                                                                        np.array(y_test_unknown)) for _ in range(clustering_runs)])
-                        losses_dict['test_average_clustering_accuracy'].append(average_clust_acc)
-                    self.train()
-                if x_test_known is not None and y_test_known is not None:
-                    losses_dict['train_classification_accuracy'].append(
-                        self.evaluate_classif_accuracy(x_train, y_train))
-                    losses_dict['test_classification_accuracy'].append(
-                        self.evaluate_classif_accuracy(x_test_known, y_test_known))
-
-        return losses_dict

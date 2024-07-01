@@ -30,12 +30,14 @@ const TabularNCDParameters = (props) => {
     return (
         <Container>
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <Col className="col-12 d-flex flex-column">
+                <Col className="col-auto">
                     <NoMaxWidthTooltip title={<img src="/TabularNCD_architecture.png" alt="Model architecture" width="700"/>} placement="bottom-end">
-                        <div style={{display: "flex", alignItems: "center"}}>
-                            <u>Model architecture help</u>
-                        </div>
+                        <u>Model architecture help</u>
                     </NoMaxWidthTooltip >
+                </Col>
+                /
+                <Col className="col-auto">
+                    <a rel="noreferrer" target="_blank" href='https://arxiv.org/pdf/2209.01217' style={{color: "white"}}>Article</a>
                 </Col>
             </Row>
 
@@ -50,35 +52,13 @@ const TabularNCDParameters = (props) => {
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
                            min={0}
-                           placeholder="Number of clusters"
+                           placeholder="n clusters"
                            step={1}
                            onChange={props.on_tabncd_n_clusters_change}
                            defaultValue={props.tabncd_n_clusters_value}
                     />
                 </Col>
             </Row>
-
-            {/*
-            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The percentage of the maximum number of pairs in a mini-batch that are considered positive">
-                        <div style={{display: "flex", alignItems: "center"}}>
-                            Cosine Top k (in %) <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
-                        </div>
-                    </Tooltip>
-                </Col>
-                <Col className="col-4 d-flex flex-column">
-                    <input type="number"
-                           min={0}
-                           max={1}
-                           placeholder="Cosine top k"
-                           step={0.1}
-                           onChange={props.on_tabncd_cosine_topk_change}
-                           defaultValue={props.tabncd_cosine_topk_value}
-                    />
-                </Col>
-            </Row>
-            */}
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
@@ -121,9 +101,9 @@ const TabularNCDParameters = (props) => {
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The step size at each iteration of the loss of the classification network">
+                    <Tooltip title="The share of points that will be defined as positives in the mini batch">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Classif. lr <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                            Top k <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -131,19 +111,19 @@ const TabularNCDParameters = (props) => {
                     <input type="number"
                            min={0}
                            max={1}
-                           placeholder="classif. lr"
-                           step={0.001}
-                           onChange={props.on_tabncd_classifier_lr_change}
-                           defaultValue={props.tabncd_classifier_lr_value}
+                           placeholder="top k"
+                           step={0.1}
+                           onChange={props.on_tabncd_topk_change}
+                           defaultValue={props.tabncd_topk_value}
                     />
                 </Col>
             </Row>
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The step size at each iteration of the loss of the clustering network">
+                    <Tooltip title="The step size at each iteration of the loss of the neural network">
                         <div style={{display: "flex", alignItems: "center"}}>
-                            Clust. lr <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                            learning rate <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
                     </Tooltip>
                 </Col>
@@ -151,10 +131,29 @@ const TabularNCDParameters = (props) => {
                     <input type="number"
                            min={0}
                            max={1}
-                           placeholder="classif. lr"
+                           placeholder="lr"
                            step={0.001}
-                           onChange={props.on_tabncd_cluster_lr_change}
-                           defaultValue={props.tabncd_cluster_lr_value}
+                           onChange={props.on_tabncd_lr_change}
+                           defaultValue={props.tabncd_lr_value}
+                    />
+                </Col>
+            </Row>
+
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <Col className="col-8 d-flex flex-column">
+                    <Tooltip title="The number of times that the training will go over the entire dataset">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Number of epochs <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
+                </Col>
+                <Col className="col-4 d-flex flex-column">
+                    <input type="number"
+                           min={0}
+                           placeholder="epochs"
+                           step={1}
+                           onChange={props.on_tabncd_epochs_change}
+                           defaultValue={props.tabncd_epochs_value}
                     />
                 </Col>
             </Row>
@@ -212,8 +211,8 @@ const TabularNCDParameters = (props) => {
                         onChange={props.on_tabncd_activation_fct_change}
                         style={{paddingTop: 0, paddingLeft: "3px", paddingBottom: 0}}
                     >
-                        <option value="sigmoid">Sigmoid</option>
                         <option value="relu">ReLu</option>
+                        <option value="sigmoid">Sigmoid</option>
                         <option value="none">None</option>
                     </Form.Select>
                 </Col>
@@ -310,7 +309,7 @@ const TabularNCDParameters = (props) => {
                     <Col className="d-flex flex-column">
                         <Row>
                             <div>
-                                Clustering layer:
+                                Other layers:
                             </div>
                         </Row>
                         {/* style={{border: "0.5mm solid", borderRadius: "0.375rem", padding: "5px"}} */}
@@ -327,21 +326,7 @@ const TabularNCDParameters = (props) => {
                                     </thead>
                                     <tbody>
                                     <tr>
-                                        <td scope="row">Input</td>
-                                        <td>
-                                            <Tooltip title="(Output size of the encoder)">
-                                                <div>
-                                                    ({(props.tabncd_hidden_layers.length > 0)
-                                                    ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
-                                                    : '?'})
-                                                </div>
-                                            </Tooltip>
-                                        </td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td scope="row">Output</td>
+                                        <td scope="row">Clustering</td>
                                         <td>
                                             <Tooltip title="(size last hidden layer, number of clusters)">
                                                 <div>
@@ -356,62 +341,19 @@ const TabularNCDParameters = (props) => {
                                                 : '?'}</td>
                                         <td></td>
                                     </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Row>
-                    </Col>
-                </div>
-            </Row>
-
-            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <div>
-                    <Col className="d-flex flex-column">
-                        <Row>
-                            <div>
-                                Classification layer:
-                            </div>
-                        </Row>
-                        {/* style={{border: "0.5mm solid", borderRadius: "0.375rem", padding: "5px"}} */}
-                        <Row>
-                            <div>
-                                <table className="table" style={{color: "white"}}>
-                                    <thead>
                                     <tr>
-                                        <th scope="col">Layer</th>
-                                        <th scope="col">Shape</th>
-                                        <th scope="col">Param #</th>
-                                        <th></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td scope="row">Input</td>
-                                        <td>
-                                            <Tooltip title="(Output size of the encoder)">
-                                                <div>
-                                                    ({(props.tabncd_hidden_layers.length > 0)
-                                                    ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
-                                                    : '?'})
-                                                </div>
-                                            </Tooltip>
-                                        </td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td scope="row">Output</td>
+                                        <td scope="row">Classification</td>
                                         <td>
                                             <Tooltip title="(size last hidden layer, number of known classes)">
                                                 <div>
                                                     ({(props.tabncd_hidden_layers.length > 0)
                                                     ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1]
-                                                    : '?'}, {format_input_output_size(props.n_known_classes)})
+                                                    : '?'}, {format_input_output_size(props.n_known_classes + 1)})
                                                 </div>
                                             </Tooltip>
                                         </td>
                                         <td>{(props.tabncd_hidden_layers.length > 0 && props.n_known_classes !== null)
-                                            ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1] * props.n_known_classes + props.n_known_classes
+                                            ? props.tabncd_hidden_layers[props.tabncd_hidden_layers.length - 1] * (props.n_known_classes + 1) + (props.n_known_classes + 1)
                                             : '?'}</td>
                                         <td></td>
                                     </tr>

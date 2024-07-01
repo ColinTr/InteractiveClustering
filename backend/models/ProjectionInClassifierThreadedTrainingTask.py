@@ -14,8 +14,8 @@ import math
 
 
 class ProjectionInClassifierThreadedTrainingTask(ThreadedTrainingTask):
-    def __init__(self, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, ProjectionInClassifierModelToTrain, x_train, y_train, batch_size, num_epochs):
-        super().__init__(ProjectionInClassifierModelToTrain.app, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, corresponding_tsne_config_name, ProjectionInClassifierModelToTrain.model_name)
+    def __init__(self, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, ProjectionInClassifierModelToTrain, x_train, y_train, batch_size, num_epochs):
+        super().__init__(ProjectionInClassifierModelToTrain.app, dataset_name, target_name, known_classes, unknown_classes, selected_features, random_state, color_by, model_config, ProjectionInClassifierModelToTrain.model_name)
         self.model_to_train = ProjectionInClassifierModelToTrain
         self.x_train = torch.tensor(x_train, device=ProjectionInClassifierModelToTrain.device, dtype=torch.float)
         self.y_train = y_train
@@ -34,6 +34,8 @@ class ProjectionInClassifierThreadedTrainingTask(ThreadedTrainingTask):
             'epoch_mean_train_losses': [],
             'epoch_mean_train_acc': [],
         }
+
+        self.app.logger.debug(self.model_to_train)
 
         n_batchs = math.ceil((self.x_train.shape[0]) / self.batch_size)
         n_current_training_step = 0

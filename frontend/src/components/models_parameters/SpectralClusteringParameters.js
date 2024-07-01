@@ -22,7 +22,7 @@ const SpectralClusteringParameters = (props) => {
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
                            min={0}
-                           placeholder="Number of clusters"
+                           placeholder="n clusters"
                            step={1}
                            onChange={props.on_spectral_clustering_n_clusters_change}
                            defaultValue={props.spectral_clustering_n_clusters}

@@ -31,18 +31,20 @@ const ProjectionInClassifierParameters = (props) => {
     return (
         <Container>
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <Col className="col-12 d-flex flex-column">
+                <Col className="col-auto">
                     <NoMaxWidthTooltip title={<img src="/ProjectionInClassifier_architecture.png" alt="Model architecture" width="600"/>} placement="bottom-end">
-                        <div style={{display: "flex", alignItems: "center"}}>
-                            <u>Model architecture help</u>
-                        </div>
+                        <u>Model architecture help</u>
                     </NoMaxWidthTooltip >
+                </Col>
+                /
+                <Col className="col-auto">
+                    <a rel="noreferrer" target="_blank" href='https://arxiv.org/pdf/2209.01217' style={{color: "white"}}>Article</a>
                 </Col>
             </Row>
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-8 d-flex flex-column">
-                    <Tooltip title="The number of clusters used in the k-means after projection.">
+                    <Tooltip title="The number of clusters used in the k-means after projection">
                         <div style={{display: "flex", alignItems: "center"}}>
                             Number of clusters <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
                         </div>
@@ -51,7 +53,7 @@ const ProjectionInClassifierParameters = (props) => {
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
                            min={0}
-                           placeholder="Number of clusters"
+                           placeholder="n clusters"
                            step={1}
                            onChange={props.on_projection_in_classifier_n_clusters_change}
                            defaultValue={props.projection_in_classifier_n_clusters}
@@ -100,6 +102,25 @@ const ProjectionInClassifierParameters = (props) => {
             </Row>
 
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <Col className="col-8 d-flex flex-column">
+                    <Tooltip title="The number of times that the training will go over the entire dataset">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Number of epochs <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
+                </Col>
+                <Col className="col-4 d-flex flex-column">
+                    <input type="number"
+                           min={0}
+                           placeholder="epochs"
+                           step={1}
+                           onChange={props.on_projection_in_classifier_epochs_change}
+                           defaultValue={props.projection_in_classifier_epochs}
+                    />
+                </Col>
+            </Row>
+
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
                 <Col className="col-7 d-flex flex-column">
                     <Tooltip title="The activation function used between the hidden layers">
                         <div style={{display: "flex", alignItems: "center"}}>
@@ -113,8 +134,8 @@ const ProjectionInClassifierParameters = (props) => {
                         onChange={props.on_projection_in_classifier_activation_fct_change}
                         style={{paddingTop: 0, paddingLeft: "3px", paddingBottom: 0}}
                     >
-                        <option value="sigmoid">Sigmoid</option>
                         <option value="relu">ReLu</option>
+                        <option value="sigmoid">Sigmoid</option>
                         <option value="none">None</option>
                     </Form.Select>
                 </Col>

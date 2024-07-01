@@ -30,12 +30,14 @@ const PBNParameters = (props) => {
     return (
         <Container>
             <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <Col className="col-12 d-flex flex-column">
+                <Col className="col-auto">
                     <NoMaxWidthTooltip title={<img src="/PBN_architecture.png" alt="Model architecture" width="1100"/>} placement="bottom-end">
-                        <div style={{display: "flex", alignItems: "center"}}>
-                            <u>Model architecture help</u>
-                        </div>
+                        <u>Model architecture help</u>
                     </NoMaxWidthTooltip >
+                </Col>
+                /
+                <Col className="col-auto">
+                    <a rel="noreferrer" target="_blank" href='https://arxiv.org/pdf/2311.05440' style={{color: "white"}}>Article</a>
                 </Col>
             </Row>
 
@@ -50,7 +52,7 @@ const PBNParameters = (props) => {
                 <Col className="col-4 d-flex flex-column">
                     <input type="number"
                            min={0}
-                           placeholder="Number of clusters"
+                           placeholder="n clusters"
                            step={1}
                            onChange={props.on_pbn_n_clusters_change}
                            defaultValue={props.pbn_n_clusters_value}
@@ -94,6 +96,25 @@ const PBNParameters = (props) => {
                            step={0.001}
                            onChange={props.on_pbn_lr_change}
                            defaultValue={props.pbn_lr_value}
+                    />
+                </Col>
+            </Row>
+
+            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
+                <Col className="col-8 d-flex flex-column">
+                    <Tooltip title="The number of times that the training will go over the entire dataset">
+                        <div style={{display: "flex", alignItems: "center"}}>
+                            Number of epochs <FontAwesomeIcon icon={regular('circle-question')} style={{marginLeft: "5px"}}/>
+                        </div>
+                    </Tooltip>
+                </Col>
+                <Col className="col-4 d-flex flex-column">
+                    <input type="number"
+                           min={0}
+                           placeholder="epochs"
+                           step={1}
+                           onChange={props.on_pbn_epochs_change}
+                           defaultValue={props.pbn_epochs_value}
                     />
                 </Col>
             </Row>
@@ -217,51 +238,8 @@ const PBNParameters = (props) => {
                                             </center>
                                         </td>
                                     </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Row>
-                    </Col>
-                </div>
-            </Row>
-
-            <Row className="d-flex flex-row" style={{marginBottom: "10px"}}>
-                <div>
-                    <Col className="d-flex flex-column">
-                        <Row>
-                            <div>
-                                Classification layer:
-                            </div>
-                        </Row>
-                        {/* style={{border: "0.5mm solid", borderRadius: "0.375rem", padding: "5px"}} */}
-                        <Row>
-                            <div>
-                                <table className="table" style={{color: "white"}}>
-                                    <thead>
                                     <tr>
-                                        <th scope="col">Layer</th>
-                                        <th scope="col">Shape</th>
-                                        <th scope="col">Param #</th>
-                                        <th></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td scope="row">Input</td>
-                                        <td>
-                                            <Tooltip title="(Output size of the encoder)">
-                                                <div>
-                                                    ({(props.pbn_hidden_layers.length > 0)
-                                                    ? props.pbn_hidden_layers[props.pbn_hidden_layers.length - 1]
-                                                    : '?'})
-                                                </div>
-                                            </Tooltip>
-                                        </td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td scope="row">Output</td>
+                                        <td scope="row">Classifier</td>
                                         <td>
                                             <Tooltip title="(size last hidden layer, number of known classes)">
                                                 <div>
