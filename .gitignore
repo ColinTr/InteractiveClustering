@@ -10,11 +10,12 @@
 .pnp.js
 
 # misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+*.DS_Store
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+*.sav
 
 npm-debug.log*
 yarn-debug.log*
@@ -26,6 +27,7 @@ frontend/node_modules
 
 backend/.idea
 backend/icvenv/*
+backend/icvenv.zip
 backend/results/*
 !backend/results/images_folder/.gitkeep
 !backend/results/tsne_arrays/.gitkeep

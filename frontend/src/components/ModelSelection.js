@@ -4,18 +4,21 @@ import Form from 'react-bootstrap/Form';
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
+
 import KMeansParameters from "./models_parameters/KMeansParameters";
 import TabularNCDParameters from "./models_parameters/TabularNCDParameters";
-import '../App.css';
 import SpectralClusteringParameters from "./models_parameters/SpectralClusteringParameters";
 import ProjectionInClassifierParameters from "./models_parameters/ProjectionInClassifierParameters";
+import PBNParameters from "./models_parameters/PBNParameters";
+
+import '../App.css';
 
 class ModelSelection extends React.Component {
 
     constructor(props) {
         super(props);
         this.state = {
-            selected_model: "tabularncd"
+            selected_model: "pbn"
         };
     }
 
@@ -40,6 +43,7 @@ class ModelSelection extends React.Component {
                         </Col>
                         <Col className="col-8 d-flex flex-column">
                             <Form.Select aria-label="Default select example" onChange={this.onDropDownChange} className="my-row">
+                                <option value="pbn">PBN</option>
                                 <option value="tabularncd">TabularNCD</option>
                                 <option value="projection_in_classifier">Projection in classifier</option>
                                 <option value="k_means">k-means</option>
@@ -51,6 +55,30 @@ class ModelSelection extends React.Component {
                     <hr/>
 
                     <Row className="d-flex flex-row py-2" style={{overflowY: "auto", flexGrow:'1', flex:"1 1 auto", height: "0px"}}>
+                        {this.state.selected_model === "pbn" &&
+                            <PBNParameters
+                                n_features_used={this.props.n_features_used}
+                                n_known_classes={this.props.n_known_classes}
+
+                                on_pbn_n_clusters_change={this.props.on_pbn_n_clusters_change}
+                                pbn_n_clusters_value={this.props.pbn_n_clusters}
+
+                                on_pbn_w_change={this.props.on_pbn_w_change}
+                                pbn_w_value={this.props.pbn_w}
+
+                                on_pbn_lr_change={this.props.on_pbn_lr_change}
+                                pbn_lr_value={this.props.pbn_lr}
+
+                                on_pbn_dropout_change={this.props.on_pbn_dropout_change}
+                                pbn_dropout_value={this.props.pbn_dropout}
+
+                                on_pbn_activation_fct_change={this.props.on_pbn_activation_fct_change}
+
+                                pbn_hidden_layers={this.props.pbn_hidden_layers}
+                                on_pbn_add_layer_button_click={this.props.on_pbn_add_layer_button_click}
+                                on_pbn_remove_layer_button_click={this.props.on_pbn_remove_layer_button_click}
+                            />
+                        }
                         {this.state.selected_model === "tabularncd" &&
                             <TabularNCDParameters
                                 n_features_used={this.props.n_features_used}
@@ -85,7 +113,6 @@ class ModelSelection extends React.Component {
                                 tabncd_hidden_layers={this.props.tabncd_hidden_layers}
                                 onTabncdAddLayerButtonClick={this.props.onTabncdAddLayerButtonClick}
                                 onTabncdRemoveLayerButtonClick={this.props.onTabncdRemoveLayerButtonClick}
-                                tabncd_output_size={this.props.tabncd_output_size}
                             />
                         }
                         {this.state.selected_model === "k_means" &&

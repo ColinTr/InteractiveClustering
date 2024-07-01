@@ -123,6 +123,7 @@ class FeatureSelection extends React.Component {
                     <Row className="d-flex flex-row">
                         <Col>
                             <StyledTextField
+                                size="small"
                                 id="outlined-basic1"
                                 variant="outlined"
                                 fullWidth
@@ -173,6 +174,7 @@ class FeatureSelection extends React.Component {
                             <Row className="d-flex flex-row">
                                 <Col>
                                     <StyledTextField
+                                        size="small"
                                         id="outlined-basic2"
                                         variant="outlined"
                                         fullWidth

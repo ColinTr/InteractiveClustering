@@ -50,7 +50,15 @@ class FullPage extends React.Component {
             decision_tree_response_pdf_file: null,
             decision_tree_response_accuracy_score: null,
 
-            selected_model : "tabularncd",
+            selected_model : "pbn",
+
+            // Default PBN parameters
+            model_pbn_n_clusters : 10,
+            model_pbn_w : 0.8,
+            model_pbn_lr : 0.001,
+            model_pbn_dropout : 0.2,
+            model_pbn_activation_fct : "relu",
+            model_pbn_hidden_layers: [],
 
             // Default TabularNCD parameters
             model_tabncd_n_clusters : 10,
@@ -233,8 +241,6 @@ class FullPage extends React.Component {
         this.setState({n_known_classes: this.getNumberOfCheckedValues(class_values_to_display)})
     }
 
-
-
     onSwitchAllOnButtonClick = () => {
         if (this.state.class_values_to_display != null) {
             let class_values_to_display = [...this.state.class_values_to_display];  // Make a shallow copy
@@ -396,8 +402,6 @@ class FullPage extends React.Component {
     }
 
     onRulesRunButtonClick = () => {
-        // ToDo sanity checks
-
         // Build the request
         const requestOptions = {
             method: 'POST',
@@ -494,15 +498,13 @@ class FullPage extends React.Component {
         this.setState({show_unknown_only: !this.state.show_unknown_only})
     }
 
-    onAgglomerativeClusteringRunButtonClick = (agglomerative_clustering_value) => {
-        console.log("ToDo run agglomerative clustering with " + agglomerative_clustering_value + " clusters fusion")
-        fireSwalError("Not implemented yet!")
-    }
+    // onAgglomerativeClusteringRunButtonClick = (agglomerative_clustering_value) => {
+    //     fireSwalError("Not implemented yet!")
+    // }
 
-    onAgglomerativeClusteringUpdateRulesButtonClick = () => {
-        fireSwalError("Not implemented yet!")
-        console.log("ToDo update the rules based on the result of the agglomerative clustering")
-    }
+    // onAgglomerativeClusteringUpdateRulesButtonClick = () => {
+    //     fireSwalError("Not implemented yet!")
+    // }
 
     updateTimeEstimationDict = (thread_id, new_progress_value) => {
         let estimated_times_to_train_copy = {...this.state.estimated_times_to_train}
@@ -567,7 +569,20 @@ class FullPage extends React.Component {
 
         let model_config = null
 
-        if(this.state.selected_model === "tabularncd"){
+        if(this.state.selected_model === "pbn"){
+            model_config = {
+                'model_name': this.state.selected_model,
+
+                'pbn_n_clusters': parseInt(this.state.model_pbn_n_clusters),
+                'pbn_w': parseFloat(this.state.model_pbn_w),
+                'pbn_lr': parseFloat(this.state.model_pbn_lr),
+                'pbn_dropout': parseFloat(this.state.model_pbn_dropout),
+                'pbn_activation_fct': this.state.model_pbn_activation_fct,
+                'input_size': this.state.n_features_used,
+                'pbn_hidden_layers': this.state.pbn_hidden_layers
+            }
+        }
+        else if(this.state.selected_model === "tabularncd"){
             model_config = {
                 'model_name': this.state.selected_model,
 
@@ -767,6 +782,26 @@ class FullPage extends React.Component {
         this.setState({model_k_means_n_clusters: parseInt(event.target.value)})
     }
 
+    on_pbn_n_clusters_change = (event) => {
+        this.setState({model_pbn_n_clusters: parseInt(event.target.value)})
+    }
+
+    on_pbn_w_change = (event) => {
+        this.setState({model_pbn_w: parseFloat(event.target.value)})
+    }
+
+    on_pbn_lr_change = (event) => {
+        this.setState({model_pbn_lr: parseFloat(event.target.value)})
+    }
+
+    on_pbn_dropout_change = (event) => {
+        this.setState({model_pbn_dropout: parseFloat(event.target.value)})
+    }
+
+    on_pbn_activation_fct_change = (event) => {
+        this.setState({model_pbn_activation_fct: event.target.value})
+    }
+
     on_tabncd_n_clusters_change = (event) => {
         this.setState({model_tabncd_n_clusters: parseInt(event.target.value)})
     }
@@ -868,6 +903,25 @@ class FullPage extends React.Component {
         let model_tabncd_hidden_layers_copy = [...this.state.model_tabncd_hidden_layers]
         model_tabncd_hidden_layers_copy.splice(layer_index, 1)
         this.setState({model_tabncd_hidden_layers: model_tabncd_hidden_layers_copy})
+    }
+
+    on_pbn_add_layer_button_click = () => {
+        const layer_size = document.getElementById('pbnLayerSizeInput').value
+
+        if(layer_size === null || layer_size === '' || layer_size <= 0){
+            fireSwalError("Please enter a valid value")
+            return
+        }
+
+        let model_pbn_hidden_layers_copy = [...this.state.model_pbn_hidden_layers]
+        model_pbn_hidden_layers_copy.push(parseInt(layer_size))
+        this.setState({model_pbn_hidden_layers: model_pbn_hidden_layers_copy})
+    }
+
+    on_pbn_remove_layer_button_click = (layer_index) => {
+        let model_pbn_hidden_layers_copy = [...this.state.model_pbn_hidden_layers]
+        model_pbn_hidden_layers_copy.splice(layer_index, 1)
+        this.setState({model_pbn_hidden_layers: model_pbn_hidden_layers_copy})
     }
 
     onSeeResultsButtonClick = (thread_id) => {
@@ -1039,6 +1093,19 @@ class FullPage extends React.Component {
 
                                         n_features_used={this.state.n_features_used}
                                         n_known_classes={this.state.n_known_classes}
+
+                                        on_pbn_n_clusters_change={this.on_pbn_n_clusters_change}
+                                        pbn_n_clusters={this.state.model_pbn_n_clusters}
+                                        on_pbn_w_change={this.on_pbn_w_change}
+                                        pbn_w={this.state.model_pbn_w}
+                                        on_pbn_lr_change={this.on_pbn_lr_change}
+                                        pbn_lr={this.state.model_pbn_lr}
+                                        on_pbn_dropout_change={this.on_pbn_dropout_change}
+                                        pbn_dropout={this.state.model_pbn_dropout}
+                                        on_pbn_activation_fct_change={this.on_pbn_activation_fct_change}
+                                        pbn_hidden_layers={this.state.model_pbn_hidden_layers}
+                                        on_pbn_add_layer_button_click={this.on_pbn_add_layer_button_click}
+                                        on_pbn_remove_layer_button_click={this.on_pbn_remove_layer_button_click}
 
                                         on_tabncd_n_clusters_change={this.on_tabncd_n_clusters_change}
                                         tabncd_n_clusters={this.state.model_tabncd_n_clusters}

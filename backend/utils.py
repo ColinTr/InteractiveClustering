@@ -39,6 +39,17 @@ def setup_device(app, use_cuda=True):
     return device
 
 
+def get_activation_function(name):
+    if name == 'relu':
+        return nn.ReLU()
+    elif name == 'sigmoid':
+        return nn.Sigmoid()
+    elif name == 'tanh':
+        return nn.Tanh()
+    else:
+        return None
+
+
 def get_simple_layer(size_in, size_out, add_dropout=True, p_dropout=0.3, activation_fct='sigmoid'):
     """
     General function to define a layer with a single dense layer, followed *optionally* by a dropout and activation layer.
