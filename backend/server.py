@@ -1,9 +1,12 @@
-"""
-Orange Labs
-Authors : Colin Troisemaine
-Maintainer : colin.troisemaine@gmail.com
-"""
-from models.PBNModel import PBNModel
+# Software Name : InteractiveClustering
+# Version: 1.0
+# SPDX-FileCopyrightText: Copyright (c) 2024 Orange
+# SPDX-License-Identifier: MIT
+#
+# This software is distributed under the MIT License,
+# the text of which is available at https://spdx.org/licenses/MIT.html
+# or see the "license.txt" file for more details.
+
 from models.ProjectionInClassifierThreadedTrainingTask import ProjectionInClassifierThreadedTrainingTask
 from models.TabularNCDThreadedTrainingTask import TabularNCDThreadedTrainingTask
 from models.ProjectionInClassifierModel import ProjectionInClassifierModel
@@ -13,6 +16,7 @@ from flask import Flask, jsonify, request, send_file
 from models.TabularNCDModel import TabularNCDModel
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
+from models.PBNModel import PBNModel
 from sklearn.manifold import TSNE
 from PyPDF2 import PdfMerger
 import plotly.express as px

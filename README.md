@@ -75,6 +75,9 @@ If you found this work useful, please use the following citation:
 
 ## License
 
-Copyright (c) 2023 Orange.
+Copyright (c) 2024 Orange.
 
 This code is released under the MIT license. See the LICENSE file for more information.
+
+This application uses the CUDA Toolkit. The CUDA Toolkit is subject to the NVIDIA End User License Agreement (EULA).
+Please review the NVIDIA EULA at https://docs.nvidia.com/cuda/eula/index.html.
