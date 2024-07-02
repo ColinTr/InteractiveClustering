@@ -2,9 +2,30 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Simple web interface to interact with various clustering algorithms and display their results.
+This application proposes a simple web interface designed to assist the user in solving the Machine Learning problem of [Novel Class Discovery](https://arxiv.org/pdf/2302.12028.pdf).
 
-**/!\ Datasets must be placed in ./datasets/... and cannot be loaded from other folders.**
+With this interface, the user can:
+<ol>
+  <li>Load a CSV dataset.</li>
+  <li>Select which features to use in the dataset, and indicate which is the class feature.</li>
+  <li>Choose to remove some classes from the dataset by unchecking them and select which classes are considered as known or unknown.</li>
+  <li>Visualize the data in 2 dimensions by running a T-SNE. There is an option to view only the unknown classes for easier readability. Clicking on a point displays all its attributes.</li>
+  <li>Configure and execute 3 NCD models and 2 unsupervised clustering algorithms. The models currently implemented are:
+    <ol>
+      <li>[PBN](https://arxiv.org/pdf/2311.05440)</li>
+      <li>[TabularNCD](https://arxiv.org/pdf/2209.01217)</li>
+      <li>A baseline model described in the two previous papers</li>
+      <li>$k$-means and Spectral Clustering</li>
+    </ol>
+  </li>
+  <li>Get an interpretable description of the results by training a decision tree to classify the known classes and the discovered clusters.</li>
+</ol>
+
+PBN, TabularNCD and the baseline rely on an architecture composed of a combination of dense layers, dropout and activation functions which can all be modified through the interface (even the sizes and number of hidden layers).
+
+Finally, we note that because Python code cannot be directly executed in a web browser, this application is split in two: a frontend application in React.js to display the interface, and a backend application in Flask to execute the Python code.
+Additionally, web browsers security measures make it impossible to read the full path from file selector. Thus, **datasets must be placed in ./datasets/... and cannot be loaded from other folders.**
+
 
 ## The interface
 
