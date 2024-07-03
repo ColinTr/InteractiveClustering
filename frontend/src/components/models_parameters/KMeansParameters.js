@@ -34,13 +34,12 @@ const KMeansParameters = (props) => {
                            placeholder="n clusters"
                            step={1}
                            onChange={props.on_kmeans_n_clusters_change}
-                           defaultValue={props.k_means_n_clusters}
+                           value={props.k_means_n_clusters}
                     />
                 </Col>
             </Row>
         </Container>
     )
-
 }
 
 export default KMeansParameters;

@@ -66,7 +66,7 @@ const ProjectionInClassifierParameters = (props) => {
                            placeholder="n clusters"
                            step={1}
                            onChange={props.on_projection_in_classifier_n_clusters_change}
-                           defaultValue={props.projection_in_classifier_n_clusters}
+                           value={props.projection_in_classifier_n_clusters}
                     />
                 </Col>
             </Row>
@@ -86,7 +86,7 @@ const ProjectionInClassifierParameters = (props) => {
                            placeholder="dropout"
                            step={0.1}
                            onChange={props.on_projection_in_classifier_dropout_change}
-                           defaultValue={props.projection_in_classifier_dropout}
+                           value={props.projection_in_classifier_dropout}
                     />
                 </Col>
             </Row>
@@ -106,7 +106,7 @@ const ProjectionInClassifierParameters = (props) => {
                            placeholder="learning rate"
                            step={0.001}
                            onChange={props.on_projection_in_classifier_lr_change}
-                           defaultValue={props.projection_in_classifier_lr_value}
+                           value={props.projection_in_classifier_lr_value}
                     />
                 </Col>
             </Row>
@@ -125,7 +125,7 @@ const ProjectionInClassifierParameters = (props) => {
                            placeholder="epochs"
                            step={1}
                            onChange={props.on_projection_in_classifier_epochs_change}
-                           defaultValue={props.projection_in_classifier_epochs}
+                           value={props.projection_in_classifier_epochs}
                     />
                 </Col>
             </Row>
@@ -142,6 +142,7 @@ const ProjectionInClassifierParameters = (props) => {
                     <Form.Select
                         aria-label="Activation function"
                         onChange={props.on_projection_in_classifier_activation_fct_change}
+                        value={props.projection_in_classifier_activation_fct}
                         style={{paddingTop: 0, paddingLeft: "3px", paddingBottom: 0}}
                     >
                         <option value="relu">ReLu</option>

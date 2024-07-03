@@ -65,7 +65,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="n clusters"
                            step={1}
                            onChange={props.on_tabncd_n_clusters_change}
-                           defaultValue={props.tabncd_n_clusters_value}
+                           value={props.tabncd_n_clusters_value}
                     />
                 </Col>
             </Row>
@@ -85,7 +85,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="w1"
                            step={0.1}
                            onChange={props.on_tabncd_w1_change}
-                           defaultValue={props.tabncd_w1_value}
+                           value={props.tabncd_w1_value}
                     />
                 </Col>
             </Row>
@@ -104,7 +104,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="w2"
                            step={0.1}
                            onChange={props.on_tabncd_w2_change}
-                           defaultValue={props.tabncd_w2_value}
+                           value={props.tabncd_w2_value}
                     />
                 </Col>
             </Row>
@@ -124,7 +124,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="top k"
                            step={0.1}
                            onChange={props.on_tabncd_topk_change}
-                           defaultValue={props.tabncd_topk_value}
+                           value={props.tabncd_topk_value}
                     />
                 </Col>
             </Row>
@@ -144,7 +144,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="lr"
                            step={0.001}
                            onChange={props.on_tabncd_lr_change}
-                           defaultValue={props.tabncd_lr_value}
+                           value={props.tabncd_lr_value}
                     />
                 </Col>
             </Row>
@@ -163,7 +163,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="epochs"
                            step={1}
                            onChange={props.on_tabncd_epochs_change}
-                           defaultValue={props.tabncd_epochs_value}
+                           value={props.tabncd_epochs_value}
                     />
                 </Col>
             </Row>
@@ -182,7 +182,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="k neighbors"
                            step={1}
                            onChange={props.on_tabncd_k_neighbors_change}
-                           defaultValue={props.tabncd_k_neighbors_value}
+                           value={props.tabncd_k_neighbors_value}
                     />
                 </Col>
             </Row>
@@ -202,7 +202,7 @@ const TabularNCDParameters = (props) => {
                            placeholder="dropout"
                            step={0.1}
                            onChange={props.on_tabncd_dropout_change}
-                           defaultValue={props.tabncd_dropout_value}
+                           value={props.tabncd_dropout_value}
                     />
                 </Col>
             </Row>
@@ -219,6 +219,7 @@ const TabularNCDParameters = (props) => {
                     <Form.Select
                         aria-label="Activation function"
                         onChange={props.on_tabncd_activation_fct_change}
+                        value={props.tabncd_activation_fct}
                         style={{paddingTop: 0, paddingLeft: "3px", paddingBottom: 0}}
                     >
                         <option value="relu">ReLu</option>

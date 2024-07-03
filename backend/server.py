@@ -35,6 +35,8 @@ import os
 import gc
 import re
 
+os.environ["OMP_NUM_THREADS"] = '1'  # For the k-means warning...
+
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 # app.secret_key = "My Secret key"
@@ -164,50 +166,34 @@ def equal_dicts(d1, d2, ignore_keys):
     return d1_filtered == d2_filtered
 
 
+def used_classes(config_dict):
+    # In the case where we show only the unknown classes, only the set of unknown classes should be equal
+    if config_dict['show_unknown_only'] is True:
+        return config_dict['unknown_classes']
+    # Otherwise, all the classes have to be the same
+    else:
+        return config_dict['known_classes'] + config_dict['unknown_classes']
+
+
 def findTSNEConfig(results_dict, dataset_name, tsne_config_to_find):
+    # If it has to be viewed in a latent space, its complicated...
+    if tsne_config_to_find['view_in_encoder'] is True:
+        return None, None
+
     if dataset_name in results_dict.keys():
         for tsne_run_name in results_dict[dataset_name].keys():
             tsne_run = results_dict[dataset_name][tsne_run_name]
-
-            # If it has to be viewed in a latent space, its complicated...
-            if tsne_run['tsne_config']['view_in_encoder'] is True or tsne_config_to_find['view_in_encoder'] is True:
-                return None, None
-            else:
-                same_tsne_config = False
-                if (tsne_run['tsne_config']['tsne_seed'] == tsne_config_to_find['tsne_seed']
-                        and tsne_run['tsne_config']['tsne_perplexity'] == tsne_config_to_find['tsne_perplexity']
-                        and set(tsne_run['tsne_config']['selected_features']) == set(tsne_config_to_find['selected_features'])):
-                    if tsne_run["tsne_config"]['show_unknown_only'] == tsne_config_to_find['show_unknown_only']:
-                        # In the case where we show only the unknown classes, only the set of unknown classes should be equal
-                        if tsne_config_to_find['show_unknown_only'] is True:
-                            if set(tsne_run['tsne_config']['unknown_classes']) == set(tsne_config_to_find['unknown_classes']):
-                                same_tsne_config = True
-                        else:
-                            # Otherwise, all the classes have to be the same
-                            if set(tsne_run['tsne_config']['known_classes'] + tsne_run['tsne_config']['unknown_classes']) == set(tsne_config_to_find['known_classes'] + tsne_config_to_find['unknown_classes']):
-                                same_tsne_config = True
-
-                if same_tsne_config is True:
-                    if os.path.isfile(tsne_run['tsne_filepath']):
-                        app.logger.debug("Re-using t-SNE at " + tsne_run['tsne_filepath'])
-                        tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
-                        return tsne_array, tsne_run_name
-
-            # # In the case where we show all classes, only the set of known + unknown classes should be equal
-            # if tsne_config_to_find['show_unknown_only'] is False and tsne_run["tsne_config"][
-            #     'show_unknown_only'] is False:
-            #     if set(tsne_run["tsne_config"]['known_classes'] + tsne_run["tsne_config"]['unknown_classes']) == set(
-            #             tsne_config_to_find['known_classes'] + tsne_config_to_find['unknown_classes']):
-            #         # If the sets are equal, we compare the two dicts while ignoring the keys 'known_classes' and 'unknown_classes'
-            #         if equal_dicts(tsne_run["tsne_config"], tsne_config_to_find, ['known_classes', 'unknown_classes']):
-            #             if os.path.isfile(tsne_run['tsne_filepath']):
-            #                 tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
-            #                 return tsne_array, tsne_run_name
-            # # If we show only the known classes, the whole config should be equal
-            # elif tsne_run["tsne_config"] == tsne_config_to_find:
-            #     if os.path.isfile(tsne_run['tsne_filepath']):
-            #         tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
-            #         return tsne_array, tsne_run_name
+            # We compare only the configuration elements that matter for the t-SNE:
+            #   For instance, the target doesn't matter in the t-SNE, it only matters when coloring the plot.
+            if (tsne_run['tsne_config']['view_in_encoder'] == tsne_config_to_find['view_in_encoder']
+                    and tsne_run['tsne_config']['tsne_seed'] == tsne_config_to_find['tsne_seed']
+                    and tsne_run['tsne_config']['tsne_perplexity'] == tsne_config_to_find['tsne_perplexity']
+                    and set(tsne_run['tsne_config']['selected_features']) == set(tsne_config_to_find['selected_features'])
+                    and set(used_classes(tsne_run["tsne_config"])) == set(used_classes(tsne_config_to_find))):
+                if os.path.isfile(tsne_run['tsne_filepath']):
+                    app.logger.debug("Re-using t-SNE at " + tsne_run['tsne_filepath'])
+                    tsne_array = pd.read_csv(tsne_run['tsne_filepath'], header=None)
+                    return tsne_array, tsne_run_name
 
     return None, None
 

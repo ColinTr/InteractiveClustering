@@ -24,19 +24,6 @@ import PBNParameters from "./models_parameters/PBNParameters";
 import '../App.css';
 
 class ModelSelection extends React.Component {
-
-    constructor(props) {
-        super(props);
-        this.state = {
-            selected_model: "pbn"
-        };
-    }
-
-    onDropDownChange = event => {
-        this.props.updateSelectedModel(event.target.value)
-        this.setState({selected_model: event.target.value})
-    };
-
     render() {
         return (
             <Container>
@@ -52,7 +39,7 @@ class ModelSelection extends React.Component {
                             Model
                         </Col>
                         <Col className="col-8 d-flex flex-column">
-                            <Form.Select aria-label="Default select example" onChange={this.onDropDownChange} className="my-row">
+                            <Form.Select aria-label="Default select example" onChange={(event)=> this.props.updateSelectedModel(event.target.value)} className="my-row" value={this.props.selected_model}>
                                 <option value="pbn">PBN</option>
                                 <option value="tabularncd">TabularNCD</option>
                                 <option value="projection_in_classifier">Projection in classifier</option>
@@ -65,11 +52,13 @@ class ModelSelection extends React.Component {
                     <hr/>
 
                     <Row className="d-flex flex-row py-2" style={{overflowY: "auto", flexGrow:'1', flex:"1 1 auto", height: "0px"}}>
-                        {this.state.selected_model === "pbn" &&
+                        {this.props.selected_model === "pbn" &&
                             <PBNParameters
+                                // Constants
                                 n_features_used={this.props.n_features_used}
                                 n_known_classes={this.props.n_known_classes}
 
+                                // Controlled components
                                 on_pbn_epochs_change={this.props.on_pbn_epochs_change}
                                 pbn_epochs_value={this.props.pbn_epochs}
 
@@ -86,17 +75,20 @@ class ModelSelection extends React.Component {
                                 pbn_dropout_value={this.props.pbn_dropout}
 
                                 on_pbn_activation_fct_change={this.props.on_pbn_activation_fct_change}
+                                pbn_activation_fct={this.props.pbn_activation_fct}
 
                                 pbn_hidden_layers={this.props.pbn_hidden_layers}
                                 on_pbn_add_layer_button_click={this.props.on_pbn_add_layer_button_click}
                                 on_pbn_remove_layer_button_click={this.props.on_pbn_remove_layer_button_click}
                             />
                         }
-                        {this.state.selected_model === "tabularncd" &&
+                        {this.props.selected_model === "tabularncd" &&
                             <TabularNCDParameters
+                                // Constants
                                 n_features_used={this.props.n_features_used}
                                 n_known_classes={this.props.n_known_classes}
 
+                                // Controlled components
                                 on_tabncd_epochs_change={this.props.on_tabncd_epochs_change}
                                 tabncd_epochs_value={this.props.tabncd_epochs}
 
@@ -125,20 +117,23 @@ class ModelSelection extends React.Component {
                                 tabncd_dropout_value={this.props.tabncd_dropout}
 
                                 on_tabncd_activation_fct_change={this.props.on_tabncd_activation_fct_change}
+                                tabncd_activation_fct={this.props.tabncd_activation_fct}
 
                                 tabncd_hidden_layers={this.props.tabncd_hidden_layers}
                                 onTabncdAddLayerButtonClick={this.props.onTabncdAddLayerButtonClick}
                                 onTabncdRemoveLayerButtonClick={this.props.onTabncdRemoveLayerButtonClick}
                             />
                         }
-                        {this.state.selected_model === "k_means" &&
+                        {this.props.selected_model === "k_means" &&
                             <KMeansParameters
+                                // Controlled components
                                 on_kmeans_n_clusters_change={this.props.on_kmeans_n_clusters_change}
                                 k_means_n_clusters={this.props.k_means_n_clusters}
                             />
                         }
-                        {this.state.selected_model === "spectral_clustering" &&
+                        {this.props.selected_model === "spectral_clustering" &&
                             <SpectralClusteringParameters
+                                // Controlled components
                                 on_spectral_clustering_n_clusters_change={this.props.on_spectral_clustering_n_clusters_change}
                                 spectral_clustering_n_clusters={this.props.spectral_clustering_n_clusters}
 
@@ -146,22 +141,29 @@ class ModelSelection extends React.Component {
                                 spectral_clustering_affinity={this.props.spectral_clustering_affinity}
                             />
                         }
-                        {this.state.selected_model === "projection_in_classifier" &&
+                        {this.props.selected_model === "projection_in_classifier" &&
                             <ProjectionInClassifierParameters
+                                // Constants
                                 n_features_used = {this.props.n_features_used}
                                 n_known_classes = {this.props.n_known_classes}
 
-                                on_projection_in_classifier_epochs_change = {this.props.on_projection_in_classifier_epochs_change}
-                                projection_in_classifier_epochs = {this.props.projection_in_classifier_epochs}
+                                // Controlled components
                                 on_projection_in_classifier_n_clusters_change = {this.props.on_projection_in_classifier_n_clusters_change}
                                 projection_in_classifier_n_clusters = {this.props.projection_in_classifier_n_clusters}
-                                projection_in_classifier_hidden_layers = {this.props.projection_in_classifier_hidden_layers}
+
                                 on_projection_in_classifier_dropout_change = {this.props.on_projection_in_classifier_dropout_change}
                                 projection_in_classifier_dropout = {this.props.projection_in_classifier_dropout}
-                                on_projection_in_classifier_activation_fct_change = {this.props.on_projection_in_classifier_activation_fct_change}
+
                                 on_projection_in_classifier_lr_change = {this.props.on_projection_in_classifier_lr_change}
                                 projection_in_classifier_lr_value = {this.props.projection_in_classifier_lr_value}
 
+                                on_projection_in_classifier_epochs_change = {this.props.on_projection_in_classifier_epochs_change}
+                                projection_in_classifier_epochs = {this.props.projection_in_classifier_epochs}
+
+                                on_projection_in_classifier_activation_fct_change = {this.props.on_projection_in_classifier_activation_fct_change}
+                                projection_in_classifier_activation_fct = {this.props.projection_in_classifier_activation_fct}
+
+                                projection_in_classifier_hidden_layers = {this.props.projection_in_classifier_hidden_layers}
                                 onProjectionInClassifierAddLayerButtonClick = {this.props.onProjectionInClassifierAddLayerButtonClick}
                                 onProjectionInClassifierRemoveLayerButtonClick = {this.props.onProjectionInClassifierRemoveLayerButtonClick}
                             />

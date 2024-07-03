@@ -42,6 +42,7 @@ class AgglomerativeClustering extends React.Component {
                                 max={42}  // To set to the total number of clusters
                                 tooltip='off'
                                 onChange={changeEvent => this.setState({agglomerative_clustering_value: changeEvent.target.value})}
+                                // ToDo control component's value directly with value={...}
                             />
                         </Col>
 

@@ -19,7 +19,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { regular } from '@fortawesome/fontawesome-svg-core/import.macro'
 
 class RulesGenerator extends React.Component {
-
     render() {
         return (
             <Container>
@@ -64,6 +63,7 @@ class RulesGenerator extends React.Component {
                                        key="switch_train_unknown_ony"
                                        id="switch_train_unknown_ony"
                                        onChange={this.props.onRulesUnknownClassesOnlySwitchChange}
+                                       checked={this.props.decision_tree_unknown_classes_only}
                                        style={{marginRight: "10px"}}
                                 />
                             </div>
@@ -123,7 +123,7 @@ class RulesGenerator extends React.Component {
                                    min={0}
                                    placeholder="Max depth"
                                    step={1}
-                                   defaultValue={this.props.decision_tree_decision_tree_max_leaf_nodes}
+                                   value={this.props.decision_tree_decision_tree_max_leaf_nodes}
                                    onChange={this.props.on_decision_tree_decision_tree_max_leaf_nodes_change}
                             />
                         </Col>

@@ -18,7 +18,7 @@ import FireSwalError from "./FireSwalError";
 
 
 const ModelTrainingSnackbar = forwardRef((props, ref) => {
-    function onCancelTrainingButtonClick() {
+    function onCancelTrainingButtonClick(props) {
         clearInterval(props.refreshIntervalId)
 
         const cancelThreadRequestOptions = {
@@ -69,7 +69,7 @@ const ModelTrainingSnackbar = forwardRef((props, ref) => {
                     <Row style={{marginTop: "10px", marginBottom: "5px"}}>
                         <div>
                             <div className="progress">
-                                <div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100" id={"pb_thread_"+props.thread_id}/>
+                                <div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100" id={"pb_thread_" + props.thread_id}/>
                             </div>
                         </div>
                     </Row>
@@ -94,7 +94,7 @@ const ModelTrainingSnackbar = forwardRef((props, ref) => {
                     </Row>
                     <Row>
                         <Col className="col-4 d-flex flex-column align-items-start">
-                            <button type="button" className="btn btn-danger" onClick={onCancelTrainingButtonClick}>
+                            <button type="button" className="btn btn-danger" onClick={() => onCancelTrainingButtonClick(props)}>
                                 Cancel
                             </button>
                         </Col>

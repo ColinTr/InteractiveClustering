@@ -65,7 +65,7 @@ const PBNParameters = (props) => {
                            placeholder="n clusters"
                            step={1}
                            onChange={props.on_pbn_n_clusters_change}
-                           defaultValue={props.pbn_n_clusters_value}
+                           value={props.pbn_n_clusters_value}
                     />
                 </Col>
             </Row>
@@ -85,7 +85,7 @@ const PBNParameters = (props) => {
                            placeholder="w"
                            step={0.1}
                            onChange={props.on_pbn_w_change}
-                           defaultValue={props.pbn_w_value}
+                           value={props.pbn_w_value}
                     />
                 </Col>
             </Row>
@@ -105,7 +105,7 @@ const PBNParameters = (props) => {
                            placeholder="lr"
                            step={0.001}
                            onChange={props.on_pbn_lr_change}
-                           defaultValue={props.pbn_lr_value}
+                           value={props.pbn_lr_value}
                     />
                 </Col>
             </Row>
@@ -124,7 +124,7 @@ const PBNParameters = (props) => {
                            placeholder="epochs"
                            step={1}
                            onChange={props.on_pbn_epochs_change}
-                           defaultValue={props.pbn_epochs_value}
+                           value={props.pbn_epochs_value}
                     />
                 </Col>
             </Row>
@@ -144,7 +144,7 @@ const PBNParameters = (props) => {
                            placeholder="dropout"
                            step={0.1}
                            onChange={props.on_pbn_dropout_change}
-                           defaultValue={props.pbn_dropout_value}
+                           value={props.pbn_dropout_value}
                     />
                 </Col>
             </Row>
@@ -161,6 +161,7 @@ const PBNParameters = (props) => {
                     <Form.Select
                         aria-label="Activation function"
                         onChange={props.on_pbn_activation_fct_change}
+                        value={props.pbn_activation_fct}
                         style={{paddingTop: 0, paddingLeft: "3px", paddingBottom: 0}}
                     >
                         <option value="relu">ReLu</option>

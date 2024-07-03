@@ -35,7 +35,7 @@ const SpectralClusteringParameters = (props) => {
                            placeholder="n clusters"
                            step={1}
                            onChange={props.on_spectral_clustering_n_clusters_change}
-                           defaultValue={props.spectral_clustering_n_clusters}
+                           value={props.spectral_clustering_n_clusters}
                     />
                 </Col>
             </Row>
@@ -52,6 +52,7 @@ const SpectralClusteringParameters = (props) => {
                     <Form.Select
                         aria-label="Affinity"
                         onChange={props.on_spectral_clustering_affinity_change}
+                        value={props.spectral_clustering_affinity}
                         style={{paddingTop: 0, paddingLeft: "3px", paddingBottom: 0}}
                     >
                         <option value="rbf">RBF</option>

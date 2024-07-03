@@ -30,26 +30,10 @@ class FullPage extends React.Component {
         super(props);
 
         // The states of the children that need to be shared are "lifted" here
-        this.initial_state = {
-            dataset_name : null,
+        this.user_default_state_values = {
+            field_separator: ',',
 
-            formatted_features : null,
-            feature_search_query: '',
-            search_filtered_features_list : null,
-
-            selected_class_feature: null,
-            class_values_to_display: null,
-            unique_values_search_query: '',
-            search_filtered_unique_values_list : null,
-
-            image_to_display: null,
             show_unknown_only: false,
-
-            n_features_used: null,
-            n_known_classes: null,
-
-            view_in_encoder_dict: {},
-            estimated_times_to_train: {},
 
             // Default rules generation parameters
             decision_tree_training_mode: "one_vs_rest",
@@ -57,11 +41,6 @@ class FullPage extends React.Component {
             decision_tree_max_depth: null,
             decision_tree_min_samples_split: 2,
             decision_tree_max_leaf_nodes: 10,
-            decision_tree_response_text_rules: "",
-            decision_tree_response_pdf_file: null,
-            decision_tree_response_accuracy_score: null,
-
-            selected_model : "pbn",
 
             // Default PBN parameters
             model_pbn_epochs : 200,
@@ -85,7 +64,7 @@ class FullPage extends React.Component {
             model_tabncd_activation_fct : "relu",
             model_tabncd_hidden_layers: [],
 
-            // Default k means parameters
+            // Default k-means parameters
             model_k_means_n_clusters: 10,
 
             // Default spectral clustering parameters
@@ -100,14 +79,131 @@ class FullPage extends React.Component {
             model_projection_in_classifier_lr_value : 0.001,
             model_projection_in_classifier_activation_fct: "relu",
             model_projection_in_classifier_training_progress: 0,
+        }
+        this.dataset_default_state_values = {
+            selectedFile: "",
+            dataset_name : null,
+
+            formatted_features : null,
+            feature_search_query: '',
+            search_filtered_features_list : null,
+
+            selected_class_feature: null,
+            class_values_to_display: null,
+            unique_values_search_query: '',
+            search_filtered_unique_values_list : null,
+
+            image_to_display: null,
+
+            n_features_used: null,
+            n_known_classes: null,
+
+            decision_tree_response_pdf_file: null,
+        }
+        this.other_default_state_values = {
+            selected_model : "pbn",
+
+            view_in_encoder_dict: {},  // For each modal, the value of the 'view_in_encoder' checkbox. Keys are the modal id.
+            estimated_times_to_train: {},// For each modal, the estimated times to train. Keys are the modal id.
 
             // Feature modal, opened when a point is clicked in the scatter plot
             feature_modal_is_open: false,
             point_feature_names: null,
             point_feature_values: null,
-        };
+        }
 
-        this.state = this.initial_state;
+        // Set the initial state as the concatenation of all these dicts:
+        this.state = { ...this.user_default_state_values, ...this.dataset_default_state_values, ...this.other_default_state_values};
+    }
+
+    onFileUpload = () => {
+        if (this.state.selectedFile === ""){
+            FireSwalError('Please select a file to load')
+            return
+        }
+
+        if (this.state.field_separator === ""){
+            FireSwalError('Please specify a field separator')
+            return
+        }
+
+        const dataset_name = this.state.selectedFile.replace(/\.[^/.]+$/, "")
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                'selected_file_path': this.state.selectedFile,
+                'field_separator': this.state.field_separator,
+                'dataset_name': dataset_name})
+        }
+
+        // Open the waiting notification on screen
+        const key = enqueueSnackbar({
+            anchorOrigin: { vertical: 'top', horizontal: 'left', },
+            persist: true,
+            content: (key) => <WaitSnackbar id={key} message="Loading dataset into memory..."/>,
+        })
+
+        fetch('/getFileHeader', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
+            .then(serverPromise => {
+                if (serverPromise.status === 500) {
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                }
+                if (serverPromise.status === 422) {
+                    serverPromise.json().then(error => {
+                        FireSwalError('Status 422 - Server error', error['error_message'])
+                    })
+                }
+                if (serverPromise.status === 200) {
+                    serverPromise.json().then(response => {
+                        this.setState({dataset_name: dataset_name})
+
+                        // The features we just received from the server are sent to the FullPage.js component
+                        const new_formatted_features = response['file_header'].map((feature, index) => ({"name": feature, "checked": true, "index": index, "disabled": false}))
+                        this.setState({formatted_features: new_formatted_features})
+                        this.setState({search_filtered_features_list: this.getUpdatedFilteredList(new_formatted_features, this.state.feature_search_query)})
+                        const tmp_n_feat = this.getNumberOfCheckedValues(new_formatted_features)
+                        this.setState({n_features_used: tmp_n_feat})
+
+                        // Add default layers to models:
+                        this.setState({model_projection_in_classifier_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
+                        this.setState({model_tabncd_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
+                        this.setState({model_pbn_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
+                    })
+                }
+            })
+            .finally(() => {
+                closeSnackbar(key)
+            })
+    }
+
+    onFileChange = event => {
+        this.setState({ selectedFile: event.target.files[0].name })
+    }
+
+    onDatasetUnload = () => {
+        // We don't want to reset every parameter the user defined before, just the values related to the dataset:
+        document.getElementById("my_input_file_form").value = "";
+        this.setState({ ...this.dataset_default_state_values})
+    }
+
+    onResetParametersToDefault = () => {
+        Swal.fire({
+            title: 'Reset parameters',
+            text: "All the parameters, buttons and checkboxes will be reset to the default values.",
+            showDenyButton: true,
+            confirmButtonText: 'Reset',
+            denyButtonText: `Don't reset`,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById("my_input_file_form").value = "";
+                this.setState({ ...this.user_default_state_values})
+            }
+        })
+    }
+
+    onDatasetSeparatorChange = selected_sep => {
+        this.setState({field_separator: selected_sep.target.value})
     }
 
     onFeatureRadioButtonChange = (feature_name) => {
@@ -151,19 +247,6 @@ class FullPage extends React.Component {
                     })
                 }
             })
-    }
-
-    onNewFeaturesLoaded = (new_features) => {
-        const new_formatted_features = new_features.map((feature, index) => ({"name": feature, "checked": true, "index": index, "disabled": false}))
-        this.setState({formatted_features: new_formatted_features})
-        this.setState({search_filtered_features_list: this.getUpdatedFilteredList(new_formatted_features, this.state.feature_search_query)})
-        const tmp_n_feat = this.getNumberOfCheckedValues(new_formatted_features)
-        this.setState({n_features_used: tmp_n_feat})
-
-        // Add default layers to models:
-        this.setState({model_projection_in_classifier_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
-        this.setState({model_tabncd_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
-        this.setState({model_pbn_hidden_layers: [Math.floor(0.75*tmp_n_feat), Math.floor(0.5*tmp_n_feat)]})
     }
 
     onChangeFeaturesSearch = query => {
@@ -425,14 +508,6 @@ class FullPage extends React.Component {
             })
     }
 
-    setDatasetNameHandler = (dataset_name) => {
-        this.setState({dataset_name: dataset_name})
-    }
-
-    unloadDatasetHandler = () => {
-        this.setState(this.initial_state)
-    }
-
     onRulesRunButtonClick = () => {
         // Build the request
         const requestOptions = {
@@ -689,8 +764,6 @@ class FullPage extends React.Component {
             return
         }
 
-        console.log(model_config)
-
         // Build the request
         const requestOptions = {
             method: 'POST',
@@ -810,11 +883,11 @@ class FullPage extends React.Component {
                                 anchorOrigin: { vertical: 'top', horizontal: 'left', },
                                 persist: true,
                                 content: (key, message) => <ModelTrainingSnackbar id={key}
-                                                                                  message={message}
-                                                                                  thread_id={thread_id}
-                                                                                  refreshIntervalId={refreshIntervalId}
-                                                                                  onSeeResultsButtonClick={this.onSeeResultsButtonClick}
-                                                                                  onViewInEncoderSwitchChange={this.onViewInEncoderSwitchChange}/>,
+                                                                                                 message={message}
+                                                                                                 thread_id={thread_id}
+                                                                                                 refreshIntervalId={refreshIntervalId}
+                                                                                                 onSeeResultsButtonClick={this.onSeeResultsButtonClick}
+                                                                                                 onViewInEncoderSwitchChange={this.onViewInEncoderSwitchChange}/>,
                             })
                         }))
                     // Other clustering models are fast, so we just wait for the result
@@ -935,19 +1008,6 @@ class FullPage extends React.Component {
         this.setState({feature_modal_is_open: false})
     }
 
-    onSaveImageButtonClick = () => {
-        if(this.state.image_to_display !== null) {
-            const link = document.createElement('a')
-            link.href = this.state.image_to_display
-            link.setAttribute('download', this.state.dataset_name + '.png')
-            document.body.appendChild(link)
-            link.click()
-            link.parentNode.removeChild(link)  // Clean up and remove the link
-        } else {
-            FireSwalError("No image to save.")
-        }
-    }
-
     onProjectionInClassifierAddLayerButtonClick = () => {
         const layer_size = document.getElementById('projectionInClassifierLayerSizeInput').value
 
@@ -1051,8 +1111,8 @@ class FullPage extends React.Component {
 
     onClearCacheButtonClick = () => {
         Swal.fire({
-            title: 'Are you sure?',
-            text: "Clearing the server\'s temporary files might increase the processing time of the next requests.",
+            title: 'Clear the server\' cached data',
+            text: "Clear the computed t-SNEs and saved images from the server's files. The processing time of the next requests will increase.",
             showDenyButton: true,
             confirmButtonText: 'Clear',
             denyButtonText: `Don't clear`,
@@ -1073,11 +1133,7 @@ class FullPage extends React.Component {
                             })
                         }
                         if (serverPromise.status === 200) {
-                            Swal.fire('Done!', '', 'success')
-
-                            this.setState(this.initial_state)
-
-                            // closeSnackbar()  // Closes all opened snackbars
+                            Swal.fire('Cleared the server\'s files!', '', 'success')
                         }
                     })
             }
@@ -1109,7 +1165,6 @@ class FullPage extends React.Component {
                 }
                 if (serverPromise.status === 200) {
                     serverPromise.json().then(server_json_response => {
-                        console.log(server_json_response)
                         this.setState({
                             point_feature_names: server_json_response.point_feature_names,
                             point_feature_values: server_json_response.point_feature_values,
@@ -1131,9 +1186,11 @@ class FullPage extends React.Component {
 
                 <Col className="col-lg-3 col-12 d-flex flex-column" style={{height: "98%"}}>
                     <Row className="my_row py-2">
-                        <DatasetSelector onNewFeaturesLoaded={this.onNewFeaturesLoaded}
-                                         setDatasetNameHandler={this.setDatasetNameHandler}
-                                         unloadDatasetHandler={this.unloadDatasetHandler}
+                        <DatasetSelector onFileChange={this.onFileChange}
+                                         onDatasetSeparatorChange={this.onDatasetSeparatorChange}
+                                         field_separator={this.state.field_separator}
+                                         onFileUpload={this.onFileUpload}
+                                         onDatasetUnload={this.onDatasetUnload}
                         />
                     </Row>
                     <Row className="my_row mb-lg-0 py-2" style={{flexGrow:'1'}}>
@@ -1169,7 +1226,8 @@ class FullPage extends React.Component {
                                            onShowUnknownOnlySwitchChange={this.onShowUnknownOnlySwitchChange}
                                            show_unknown_only={this.state.show_unknown_only}
 
-                                           onSaveImageButtonClick={this.onSaveImageButtonClick}
+                                           onResetParametersToDefault={this.onResetParametersToDefault}
+
                                            onClearCacheButtonClick={this.onClearCacheButtonClick}
 
                                            handlePointClick={this.handlePointClick}
@@ -1181,6 +1239,8 @@ class FullPage extends React.Component {
                     <Row className="my_row py-2 d-flex flex-row" style={{flexGrow:'1'}}>
                         <ModelSelection onRunModelButtonClick={this.onRunModelButtonClick}
                                         onAutoParamsButtonClick={this.onAutoParamsButtonClick}
+
+                                        selected_model={this.state.selected_model}
                                         updateSelectedModel={this.updateSelectedModel}
 
                                         n_features_used={this.state.n_features_used}
@@ -1197,6 +1257,7 @@ class FullPage extends React.Component {
                                         on_pbn_dropout_change={this.on_pbn_dropout_change}
                                         pbn_dropout={this.state.model_pbn_dropout}
                                         on_pbn_activation_fct_change={this.on_pbn_activation_fct_change}
+                                        pbn_activation_fct={this.state.pbn_activation_fct}
                                         pbn_hidden_layers={this.state.model_pbn_hidden_layers}
                                         on_pbn_add_layer_button_click={this.on_pbn_add_layer_button_click}
                                         on_pbn_remove_layer_button_click={this.on_pbn_remove_layer_button_click}
@@ -1220,6 +1281,7 @@ class FullPage extends React.Component {
                                         on_tabncd_dropout_change={this.on_tabncd_dropout_change}
                                         tabncd_dropout={this.state.model_tabncd_dropout}
                                         on_tabncd_activation_fct_change={this.on_tabncd_activation_fct_change}
+                                        tabncd_activation_fct={this.state.tabncd_activation_fct}
                                         tabncd_hidden_layers={this.state.model_tabncd_hidden_layers}
                                         onTabncdAddLayerButtonClick={this.onTabncdAddLayerButtonClick}
                                         onTabncdRemoveLayerButtonClick={this.onTabncdRemoveLayerButtonClick}
@@ -1241,6 +1303,7 @@ class FullPage extends React.Component {
                                         on_projection_in_classifier_dropout_change = {this.on_projection_in_classifier_dropout_change}
                                         projection_in_classifier_dropout = {this.state.model_projection_in_classifier_dropout}
                                         on_projection_in_classifier_activation_fct_change = {this.on_projection_in_classifier_activation_fct_change}
+                                        projection_in_classifier_activation_fct = {this.state.projection_in_classifier_activation_fct}
                                         on_projection_in_classifier_lr_change = {this.on_projection_in_classifier_lr_change}
                                         projection_in_classifier_lr_value = {this.state.model_projection_in_classifier_lr_value}
                                         onProjectionInClassifierAddLayerButtonClick = {this.onProjectionInClassifierAddLayerButtonClick}
@@ -1252,6 +1315,7 @@ class FullPage extends React.Component {
                                         decision_tree_training_mode={this.state.decision_tree_training_mode}
 
                                         onRulesUnknownClassesOnlySwitchChange={this.onRulesUnknownClassesOnlySwitchChange}
+                                        decision_tree_unknown_classes_only={this.state.decision_tree_unknown_classes_only}
 
                                         on_decision_tree_max_depth_change={this.on_decision_tree_max_depth_change}
                                         decision_tree_max_depth={this.state.decision_tree_max_depth}
