@@ -12,7 +12,7 @@ import Container from "react-bootstrap/Container";
 import React from 'react';
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
-import fireSwalError from "./swal_functions";
+import FireSwalError from "./pop_up_notifiers/FireSwalError";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {regular} from "@fortawesome/fontawesome-svg-core/import.macro";
 import Tooltip from "@mui/material/Tooltip";
@@ -43,12 +43,12 @@ class DatasetSelector extends React.Component {
 
     onFileUpload = () => {
         if (this.state.selectedFile === ""){
-            fireSwalError('Please select a file to load')
+            FireSwalError('Please select a file to load')
             return
         }
 
         if (this.state.field_separator === ""){
-            fireSwalError('Please specify a field separator')
+            FireSwalError('Please specify a field separator')
             return
         }
 
@@ -64,11 +64,11 @@ class DatasetSelector extends React.Component {
         fetch('/getFileHeader', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {

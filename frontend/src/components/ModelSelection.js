@@ -174,11 +174,13 @@ class ModelSelection extends React.Component {
                                 Run
                             </Button>
                         </Col>
+                        {/*
                         <Col variant="primary" className="col-6 d-flex flex-column align-items-end">
                             <Button variant="success" style={{width:'120px'}} onClick={() => this.props.onAutoParamsButtonClick()}>
                                 Auto params
                             </Button>
                         </Col>
+                        */}
                     </Row>
                 </Col>
             </Container>

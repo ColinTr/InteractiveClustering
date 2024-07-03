@@ -10,7 +10,7 @@ or see the "license.txt" file for more details.
 
 import Swal from "sweetalert2";
 
-const fireSwalError = function(title, text=null){
+const FireSwalError = function(title, text=null){
     Swal.mixin({
         toast: true,
         position: 'top-end',
@@ -30,4 +30,4 @@ const fireSwalError = function(title, text=null){
     })
 }
 
-export default fireSwalError;
+export default FireSwalError;

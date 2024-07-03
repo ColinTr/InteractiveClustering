@@ -13,14 +13,15 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Swal from "sweetalert2";
 import {closeSnackbar, enqueueSnackbar} from 'notistack'
-import DownloadSnackbar from "./DownloadSnackbar";
+import ModelTrainingSnackbar from "./pop_up_notifiers/ModelTrainingSnackbar";
 import ModelSelection from "./ModelSelection";
 import DataVisualization from "./DataVisualization";
 import DatasetSelector from "./DatasetSelector";
 import FeatureSelection from "./FeatureSelection";
 import RulesGenerator from "./RulesGenerator";
-import fireSwalError from "./swal_functions";
+import FireSwalError from "./pop_up_notifiers/FireSwalError";
 import FeatureDisplayModal from "./FeatureDisplayModal";
+import WaitSnackbar from "./pop_up_notifiers/WaitSnackbar";
 
 
 class FullPage extends React.Component {
@@ -133,11 +134,11 @@ class FullPage extends React.Component {
         fetch('/getFeatureUniqueValues', requestOptions)  // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {
@@ -355,15 +356,15 @@ class FullPage extends React.Component {
     onRawDataButtonClick = () => {
         // Sanity checks:
         if(this.state.formatted_features == null){
-            fireSwalError("Please load a dataset to visualize")
+            FireSwalError("Please load a dataset to visualize")
             return
         }
         if(this.state.selected_class_feature == null){
-            fireSwalError("Please select a target feature")
+            FireSwalError("Please select a target feature")
             return
         }
         if(this.state.show_unknown_only === true && this.getUnknownClassesFormattedList().length === 0){
-            fireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
+            FireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
             return
         }
 
@@ -378,6 +379,7 @@ class FullPage extends React.Component {
                     'unknown_classes': this.getUnknownClassesFormattedList(),
                     'target_name': this.state.selected_class_feature,
                     'show_unknown_only': this.state.show_unknown_only,
+                    'view_in_encoder': false,
                     'tsne_seed' : 0,
                     'tsne_perplexity': 30.0
                 },
@@ -390,14 +392,22 @@ class FullPage extends React.Component {
                 }
             })
         }
+
+        // Open the waiting notification on screen
+        const key = enqueueSnackbar({
+            anchorOrigin: { vertical: 'top', horizontal: 'left', },
+            persist: true,
+            content: (key) => <WaitSnackbar id={key} message="Computing t-SNE..."/>,
+        })
+
         fetch('/getDatasetTSNE', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {
@@ -409,6 +419,9 @@ class FullPage extends React.Component {
                     //     this.setState({image_to_display: imageObjectURL})
                     // })
                 }
+            })
+            .finally(() => {
+                closeSnackbar(key)
             })
     }
 
@@ -438,14 +451,22 @@ class FullPage extends React.Component {
                 }
             })
         }
+
+        // Open the waiting notification on screen
+        const key = enqueueSnackbar({
+            anchorOrigin: { vertical: 'top', horizontal: 'left', },
+            persist: true,
+            content: (key) => <WaitSnackbar id={key} message="Generating rules..."/>,
+        })
+
         fetch('/runRulesGeneration', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {
@@ -471,11 +492,14 @@ class FullPage extends React.Component {
                     })
                 }
             })
+            .finally(() => {
+                closeSnackbar(key)
+            })
     }
 
     onShowRulesButtonClick = () => {
         if(this.state.decision_tree_response_pdf_file === null){
-            fireSwalError("No rules to show", "Please run a clustering before")
+            FireSwalError("No rules to show", "Please run a clustering before")
         } else {
             window.open(this.state.decision_tree_response_pdf_file)
         }
@@ -522,11 +546,11 @@ class FullPage extends React.Component {
     }
 
     // onAgglomerativeClusteringRunButtonClick = (agglomerative_clustering_value) => {
-    //     fireSwalError("Not implemented yet!")
+    //     FireSwalError("Not implemented yet!")
     // }
 
     // onAgglomerativeClusteringUpdateRulesButtonClick = () => {
-    //     fireSwalError("Not implemented yet!")
+    //     FireSwalError("Not implemented yet!")
     // }
 
     updateTimeEstimationDict = (thread_id, new_progress_value) => {
@@ -564,34 +588,34 @@ class FullPage extends React.Component {
     onRunModelButtonClick = () => {
         // Sanity checks:
         if(this.state.formatted_features == null){
-            fireSwalError("Please load a dataset to visualize")
+            FireSwalError("Please load a dataset to visualize")
             return
         }
         if(this.state.selected_class_feature == null){
-            fireSwalError("Please select a target feature")
+            FireSwalError("Please select a target feature")
             return
         }
         if(this.state.show_unknown_only === true && this.getUnknownClassesFormattedList().length === 0){
-            fireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
+            FireSwalError("No unknown classes to plot", "Try unchecking \"Show unknown classes only\"")
             return
         }
         if(this.getUnknownClassesFormattedList().length === 0){
-            fireSwalError("Cannot run clustering", "There are no unknown classes selected")
+            FireSwalError("Cannot run clustering", "There are no unknown classes selected")
             return
         }
         if((this.state.selected_model === "projection_in_classifier" || this.state.selected_model === "tabularncd") && this.getKnownClassesFormattedList().length === 0){
-            fireSwalError("Cannot run clustering", "There are no known classes selected")
+            FireSwalError("Cannot run clustering", "There are no known classes selected")
             return
         }
         if(this.state.selected_model === "projection_in_classifier"){
             if(this.state.model_projection_in_classifier_hidden_layers.length === 0){
-                fireSwalError("Please add at least one hidden layer")
+                FireSwalError("Please add at least one hidden layer")
                 return
             }
         }
         if(this.state.selected_model === "pbn"){
             if(this.state.model_pbn_hidden_layers.length === 0){
-                fireSwalError("Please add at least one hidden layer")
+                FireSwalError("Please add at least one hidden layer")
                 return
             }
         }
@@ -661,7 +685,7 @@ class FullPage extends React.Component {
             }
         }
         else {
-            fireSwalError("Model not implemented yet")
+            FireSwalError("Model not implemented yet")
             return
         }
 
@@ -680,6 +704,7 @@ class FullPage extends React.Component {
                     'unknown_classes': this.getUnknownClassesFormattedList(),
                     'target_name': this.state.selected_class_feature,
                     'show_unknown_only': this.state.show_unknown_only,
+                    'view_in_encoder': false,
                     'tsne_seed' : 0,
                     'tsne_perplexity': 30.0
                 },
@@ -692,14 +717,25 @@ class FullPage extends React.Component {
                 }
             })
         }
+
+        let clustering_model_key = ""
+        if(this.state.selected_model === "k_means" || this.state.selected_model === "spectral_clustering"){
+            // Open the waiting notification on screen
+            clustering_model_key = enqueueSnackbar({
+                anchorOrigin: { vertical: 'top', horizontal: 'left', },
+                persist: true,
+                content: (clustering_model_key) => <WaitSnackbar id={clustering_model_key} message="Fitting clustering model..."/>,
+            })
+        }
+
         fetch('/runClustering', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {
@@ -717,12 +753,12 @@ class FullPage extends React.Component {
                             const refreshIntervalId = setInterval(() => fetch('/getThreadProgress', checkProgressRequestOptions)
                                 .then(progressServerPromise => {
                                     if (progressServerPromise.status === 500) {
-                                        fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                                        FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                                         clearInterval(refreshIntervalId)
                                     }
                                     if (progressServerPromise.status === 422) {
                                         progressServerPromise.json().then(error => {
-                                            fireSwalError('Status 422 - Server error', error['error_message'])
+                                            FireSwalError('Status 422 - Server error', error['error_message'])
                                             clearInterval(refreshIntervalId)
                                         })
                                     }
@@ -773,19 +809,23 @@ class FullPage extends React.Component {
                             enqueueSnackbar({
                                 anchorOrigin: { vertical: 'top', horizontal: 'left', },
                                 persist: true,
-                                content: (key, message) => <DownloadSnackbar id={key}
-                                                                             message={message}
-                                                                             thread_id={thread_id}
-                                                                             refreshIntervalId={refreshIntervalId}
-                                                                             onSeeResultsButtonClick={this.onSeeResultsButtonClick}
-                                                                             onViewInEncoderSwitchChange={this.onViewInEncoderSwitchChange}/>,
+                                content: (key, message) => <ModelTrainingSnackbar id={key}
+                                                                                  message={message}
+                                                                                  thread_id={thread_id}
+                                                                                  refreshIntervalId={refreshIntervalId}
+                                                                                  onSeeResultsButtonClick={this.onSeeResultsButtonClick}
+                                                                                  onViewInEncoderSwitchChange={this.onViewInEncoderSwitchChange}/>,
                             })
                         }))
                     // Other clustering models are fast, so we just wait for the result
                     } else {
-                        serverPromise.json().then(plotly_data => {
-                            this.setState({image_to_display: plotly_data})
-                        })
+                        serverPromise.json()
+                            .then(plotly_data => {
+                                this.setState({image_to_display: plotly_data})
+                            })
+                            .finally(() => {
+                                closeSnackbar(clustering_model_key)
+                            })
                         // serverPromise.blob().then(image_response_blob => {
                         //     const imageObjectURL = URL.createObjectURL(image_response_blob);
                         //     this.setState({image_to_display: imageObjectURL})
@@ -804,7 +844,7 @@ class FullPage extends React.Component {
 
     onAutoParamsButtonClick = () => {
         console.log("ToDo auto params for " + this.state.selected_model)
-        fireSwalError("Not implemented yet!")
+        FireSwalError("Not implemented yet!")
     }
 
     updateSelectedModel = (model_name) => {
@@ -904,7 +944,7 @@ class FullPage extends React.Component {
             link.click()
             link.parentNode.removeChild(link)  // Clean up and remove the link
         } else {
-            fireSwalError("No image to save.")
+            FireSwalError("No image to save.")
         }
     }
 
@@ -912,7 +952,7 @@ class FullPage extends React.Component {
         const layer_size = document.getElementById('projectionInClassifierLayerSizeInput').value
 
         if(layer_size === null || layer_size === '' || layer_size <= 0){
-            fireSwalError("Please enter a valid value")
+            FireSwalError("Please enter a valid value")
             return
         }
 
@@ -931,7 +971,7 @@ class FullPage extends React.Component {
         const layer_size = document.getElementById('tabncdLayerSizeInput').value
 
         if(layer_size === null || layer_size === '' || layer_size <= 0){
-            fireSwalError("Please enter a valid value")
+            FireSwalError("Please enter a valid value")
             return
         }
 
@@ -950,7 +990,7 @@ class FullPage extends React.Component {
         const layer_size = document.getElementById('pbnLayerSizeInput').value
 
         if(layer_size === null || layer_size === '' || layer_size <= 0){
-            fireSwalError("Please enter a valid value")
+            FireSwalError("Please enter a valid value")
             return
         }
 
@@ -976,14 +1016,22 @@ class FullPage extends React.Component {
                 'view_in_encoder': this.state.view_in_encoder_dict[thread_id]
             })
         }
+
+        // Open the waiting notification on screen
+        const key = enqueueSnackbar({
+            anchorOrigin: { vertical: 'top', horizontal: 'left', },
+            persist: true,
+            content: (key) => <WaitSnackbar id={key} message="Computing t-SNE..."/>,
+        })
+
         fetch('/getThreadResults', requestOptions)   // Don't need to specify the full localhost:5000/... as the proxy is set in package.json
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {
@@ -995,6 +1043,9 @@ class FullPage extends React.Component {
                     //     this.setState({image_to_display: imageObjectURL})
                     // })
                 }
+            })
+            .finally(() => {
+                closeSnackbar(key)
             })
     }
 
@@ -1014,11 +1065,11 @@ class FullPage extends React.Component {
                 fetch('/clearServerCache', requestOptions)
                     .then(serverPromise => {
                         if (serverPromise.status === 500) {
-                            fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                            FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                         }
                         if (serverPromise.status === 422) {
                             serverPromise.json().then(error => {
-                                fireSwalError('Status 422 - Server error', error['error_message'])
+                                FireSwalError('Status 422 - Server error', error['error_message'])
                             })
                         }
                         if (serverPromise.status === 200) {
@@ -1026,7 +1077,7 @@ class FullPage extends React.Component {
 
                             this.setState(this.initial_state)
 
-                            closeSnackbar()  // Closes all opened snackbars
+                            // closeSnackbar()  // Closes all opened snackbars
                         }
                     })
             }
@@ -1049,11 +1100,11 @@ class FullPage extends React.Component {
         fetch('/getPointData', requestOptions)
             .then(serverPromise => {
                 if (serverPromise.status === 500) {
-                    fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                    FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
                 }
                 if (serverPromise.status === 422) {
                     serverPromise.json().then(error => {
-                        fireSwalError('Status 422 - Server error', error['error_message'])
+                        FireSwalError('Status 422 - Server error', error['error_message'])
                     })
                 }
                 if (serverPromise.status === 200) {

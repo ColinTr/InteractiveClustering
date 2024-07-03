@@ -14,10 +14,10 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Swal from "sweetalert2";
-import fireSwalError from "./swal_functions";
+import FireSwalError from "./FireSwalError";
 
 
-const DownloadSnackbar = forwardRef((props, ref) => {
+const ModelTrainingSnackbar = forwardRef((props, ref) => {
     function onCancelTrainingButtonClick() {
         clearInterval(props.refreshIntervalId)
 
@@ -28,11 +28,11 @@ const DownloadSnackbar = forwardRef((props, ref) => {
         }
         fetch('/cancelTrainingThread', cancelThreadRequestOptions).then(cancelServerPromise => {
             if (cancelServerPromise.status === 500) {
-                fireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
+                FireSwalError('Status 500 - Server error', 'Please make sure that the server is running')
             }
             if (cancelServerPromise.status === 422) {
                 cancelServerPromise.json().then(error => {
-                    fireSwalError('Status 422 - Server error', error['error_message'])
+                    FireSwalError('Status 422 - Server error', error['error_message'])
                 })
             }
             if (cancelServerPromise.status === 200) {
@@ -110,4 +110,4 @@ const DownloadSnackbar = forwardRef((props, ref) => {
     )
 })
 
-export default DownloadSnackbar
+export default ModelTrainingSnackbar;
