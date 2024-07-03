@@ -12,8 +12,8 @@ With this interface, the user can:
   <li>Visualize the data in 2 dimensions by running a T-SNE. There is an option to view only the unknown classes for easier readability. Clicking on a point displays all its attributes.</li>
   <li>Configure and execute 3 NCD models and 2 unsupervised clustering algorithms. The models currently implemented are:
     <ol>
-      <li>[PBN](https://arxiv.org/pdf/2311.05440)</li>
-      <li>[TabularNCD](https://arxiv.org/pdf/2209.01217)</li>
+      <li>PBN (see https://arxiv.org/pdf/2311.05440)</li>
+      <li>TabularNCD (see https://arxiv.org/pdf/2209.01217)</li>
       <li>A baseline model described in the two previous papers</li>
       <li>$k$-means and Spectral Clustering</li>
     </ol>
