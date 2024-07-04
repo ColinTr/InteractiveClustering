@@ -21,6 +21,15 @@ import { faRotate } from "@fortawesome/free-solid-svg-icons";
 
 
 class DataVisualization extends React.Component {
+
+    // constructor(props) {
+    //     super(props);
+    //
+    //     this.state = {
+    //         lastLegendClickTime: 0
+    //     }
+    // }
+
     render() {
         return (
             <Container style={{height:"100%"}}>
@@ -57,8 +66,10 @@ class DataVisualization extends React.Component {
                                       layout={this.props.image_to_display === null ? {} : this.props.image_to_display.layout}
                                       style={{height: "97%", width: "100%", objectFit: "contain"}}
                                       alt="T-SNE of the data"
-                                      onClick={(e) => this.props.handlePointClick(e)}
+                                      onLegendClick={(e) => this.handleLegendClick(e)}
+                                      onClick={(e) => {this.props.handlePointClick(e)}}
                                       useResizeHandler={true}
+                                      config={{responsive: true}}
                                 />
                             </div>
                         </center>
@@ -94,6 +105,64 @@ class DataVisualization extends React.Component {
                 </Col>
             </Container>
         )
+    }
+
+    handleLegendClick(event) {
+        // const currentTime = new Date().getTime();
+        // const timeDiff = currentTime - this.state.lastLegendClickTime;
+        // this.setState({lastLegendClickTime: currentTime});
+        //
+        // if (timeDiff < 300) {
+        //     // Double click behavior
+        //     console.log('Double click on legend:', event);
+        // } else {
+        //     // Single click behavior
+        //     console.log('Single click on legend:', event);
+        // }
+
+        const group_title = event.node.__data__[0].groupTitle
+
+        // If the clicked element has a group_title, it's a legend group title
+        if (group_title) {
+            const clicked_legend_group_title = group_title.text
+
+            const some_traces_are_visible = this.props.image_to_display.data.some(trace =>
+                (clicked_legend_group_title === "Generated clusters" && trace.legendgroup === "clusters" && trace.visible === true)
+                || (clicked_legend_group_title === "Unknown data" && trace.legendgroup === "unknown" && trace.visible === true)
+                || (clicked_legend_group_title === "Known classes" && trace.legendgroup === "classes" && trace.visible === true)
+            )
+
+            const updatedData = this.props.image_to_display.data.map(trace => {
+                if ((clicked_legend_group_title === "Generated clusters" && trace.legendgroup === "clusters")
+                    || (clicked_legend_group_title === "Unknown data" && trace.legendgroup === "unknown")
+                    || (clicked_legend_group_title === "Known classes" && trace.legendgroup === "classes")) {
+                    // If some traces in this group are visible, set them all to 'legendonly'
+                    // Otherwise, set all their visibility to true
+                    return { ...trace, visible: some_traces_are_visible ? 'legendonly' : true }
+                } else {
+                    return trace
+                }
+            })
+
+            // Update the plot with the new data
+            this.props.updateImageToDisplayData(updatedData)
+        }
+        // Otherwise, it's an individual element of the legend
+        else {
+            const traceIndex = event.curveNumber;  // This is the index of the clicked element in the legend
+            const updatedData = this.props.image_to_display.data.map((trace, i) => {
+                if (i === traceIndex) {
+                    return {...trace, visible: trace.visible === true ? 'legendonly' : true}
+                } else {
+                    return trace
+                }
+            })
+
+            // Update the plot with the new data
+            this.props.updateImageToDisplayData(updatedData)
+        }
+
+        return false; // Prevent default legend item toggle behavior
     }
 }
 

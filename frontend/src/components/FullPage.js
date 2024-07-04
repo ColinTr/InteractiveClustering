@@ -240,7 +240,8 @@ class FullPage extends React.Component {
                 if (serverPromise.status === 200) {
                     serverPromise.json().then(response => {
                         this.setState({selected_class_feature: feature_name})
-                        const new_formatted_class_values = response['unique_values'].map((feature, index) => ({"name": feature, "checked": true, "index": index, "used": true}))
+                        const sorted_unique_values = response['unique_values'].sort()  // We want the class modalities to be sorted alphabetically
+                        const new_formatted_class_values = sorted_unique_values.map((feature, index) => ({"name": feature, "checked": true, "index": index, "used": true}))
                         this.setState({class_values_to_display: new_formatted_class_values})
                         this.setState({search_filtered_unique_values_list: this.getUpdatedFilteredList(new_formatted_class_values, this.state.unique_values_search_query)})
                         this.setState({n_known_classes: this.getNumberOfCheckedValues(new_formatted_class_values)})
@@ -1111,7 +1112,7 @@ class FullPage extends React.Component {
 
     onClearCacheButtonClick = () => {
         Swal.fire({
-            title: 'Clear the server\' cached data',
+            title: 'Clear the server\'s cached data',
             text: "Clear the computed t-SNEs and saved images from the server's files. The processing time of the next requests will increase.",
             showDenyButton: true,
             confirmButtonText: 'Clear',
@@ -1175,6 +1176,15 @@ class FullPage extends React.Component {
             })
     }
 
+    updateImageToDisplayData = updatedData => {
+        this.setState(prevState => ({
+            image_to_display: {
+                ...prevState.image_to_display,
+                data: updatedData
+            }
+        }));
+    };
+
     render() {
         return (
             <Row style={{height: '100%', width:"99%"}} className="d-flex flex-row justify-content-center align-items-center">
@@ -1221,6 +1231,7 @@ class FullPage extends React.Component {
                 <Col className="col-lg-6 col-12 d-flex flex-column justify-content-center" style={{height: "98%"}}>
                     <Row className="my_row mx-lg-0 mb-lg-0 py-2 d-flex flex-row" style={{flexGrow:'1', height:"100%"}}>
                         <DataVisualization image_to_display={this.state.image_to_display}
+                                           updateImageToDisplayData={this.updateImageToDisplayData}
                                            onRawDataButtonClick={this.onRawDataButtonClick}
 
                                            onShowUnknownOnlySwitchChange={this.onShowUnknownOnlySwitchChange}

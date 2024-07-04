@@ -18,8 +18,9 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from models.PBNModel import PBNModel
 from sklearn.manifold import TSNE
+import plotly.graph_objects as go
 from PyPDF2 import PdfMerger
-import plotly.express as px
+# import plotly.express as px
 from flask_cors import CORS
 from sklearn import tree
 import pandas as pd
@@ -35,7 +36,7 @@ import os
 import gc
 import re
 
-os.environ["OMP_NUM_THREADS"] = '1'  # For the k-means warning...
+# os.environ["OMP_NUM_THREADS"] = '1'  # For the k-means warning...
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -291,18 +292,51 @@ def getDatasetTSNE():
 
     image_filename = image_datetime_string + '.png'
 
-    tsne_target_wrapped = wrap_list(tsne_target, separator='<br>')
+    tsne_target_wrapped = np.array(wrap_list(tsne_target, separator='<br>'))
 
-    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': dataset.index[mask],
-                                                'point_class': tsne_target_wrapped})
+    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': dataset.index[mask], 'point_class': tsne_target_wrapped})
 
-    fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
-                     y=np.array(tsne_array[tsne_array.columns[1]]),
-                     color=tsne_target_wrapped,
-                     title="T-SNE of the original " + dataset_name + " dataset")
-    fig.update_layout(yaxis={'title': None},
+    # We will create two groups of items: known and unknown data, and plot the unknown data first
+    scatterplots_data = []
+
+    unknown_data_mask = tsne_target_wrapped == "Unknown"
+    scatterplots_data.append(
+        go.Scatter(x=np.array(tsne_array[tsne_array.columns[0]])[unknown_data_mask],
+                   y=np.array(tsne_array[tsne_array.columns[1]])[unknown_data_mask],
+                   mode='markers',
+                   legendgroup="unknown",
+                   legendgrouptitle_text="Unknown data",
+                   name="Unknown",
+                   visible=True)
+    )
+
+    known_data_mask = ~unknown_data_mask
+    known_tsne_array = tsne_array[known_data_mask]
+    known_tsne_target_wrapped = tsne_target_wrapped[known_data_mask]
+    for t in np.sort(np.unique(known_tsne_target_wrapped)):  # And the items in this group are sorted alphabetically
+        scatterplots_data.append(
+            go.Scatter(x=np.array(known_tsne_array[known_tsne_array.columns[0]])[known_tsne_target_wrapped == t],
+                       y=np.array(known_tsne_array[known_tsne_array.columns[1]])[known_tsne_target_wrapped == t],
+                       mode='markers',
+                       legendgroup="classes",
+                       legendgrouptitle_text="Known classes",
+                       name=t,
+                       visible=True)
+        )
+
+    fig = go.Figure(data=scatterplots_data)
+    # fig.update_layout(legend=dict(groupclick="toggleitem"))  # Toggle the visibility of just the item clicked on by the user, not the whole group
+
+    # Simple un-ordered alternative:
+    # fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
+    #                  y=np.array(tsne_array[tsne_array.columns[1]]),
+    #                  color=tsne_target_wrapped)
+
+    fig.update_layout(title="T-SNE of the " + dataset_name + " dataset",
+                      yaxis={'title': None},
                       xaxis={'title': None},
                       margin=dict(l=0, r=0, t=40, b=0))
+
     graphJSON = plotly.io.to_json(fig, pretty=True)
     # fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
@@ -408,7 +442,7 @@ def runClustering():
         clustering_prediction = kmeans_model.fit_predict(filtered_dataset[unknown_mask])
 
         full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
-        full_target[unknown_mask] = np.array(["Clust " + str(pred) for pred in clustering_prediction])
+        full_target[unknown_mask] = np.array(["Cluster " + str(pred) for pred in clustering_prediction])
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes,
                                        selected_features)
@@ -433,7 +467,7 @@ def runClustering():
         clustering_prediction = clustering_prediction.labels_
 
         full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
-        full_target[unknown_mask] = ["Clust " + str(pred) for pred in clustering_prediction]
+        full_target[unknown_mask] = ["Cluster " + str(pred) for pred in clustering_prediction]
 
         saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes,
                                        selected_features)
@@ -613,19 +647,54 @@ def generateClusteringImage(dataset_name, model_name, show_unknown_only, full_ta
 
     target_to_plot = full_target[mask]
 
-    tsne_target_wrapped = wrap_list(target_to_plot, separator='<br>')
+    tsne_target_wrapped = np.array(wrap_list(target_to_plot, separator='<br>'))
 
-    session['last_sent_points'] = pd.DataFrame(
-        {'point_index_in_df': session['loaded_datasets'].get(dataset_name).index[mask],
-         'point_class': tsne_target_wrapped})
+    session['last_sent_points'] = pd.DataFrame({'point_index_in_df': session['loaded_datasets'].get(dataset_name).index[mask], 'point_class': tsne_target_wrapped})
 
-    fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
-                     y=np.array(tsne_array[tsne_array.columns[1]]),
-                     color=tsne_target_wrapped,
-                     title="T-SNE of the original " + dataset_name + " dataset colored by " + model_name)
-    fig.update_layout(yaxis={'title': None},
+    # We will create two groups of items: clusters and classes, and plot the clusters first
+    scatterplots_data = []
+
+    clusters_data_mask = np.array([t.startswith("Cluster ") for t in tsne_target_wrapped])
+    clusters_tsne_target_wrapped = tsne_target_wrapped[clusters_data_mask]
+    clusters_tsne_array = tsne_array[clusters_data_mask]
+    for t in np.sort(np.unique(clusters_tsne_target_wrapped)):  # And the items in the group are sorted alphabetically
+        scatterplots_data.append(
+            go.Scatter(x=np.array(clusters_tsne_array[clusters_tsne_array.columns[0]])[clusters_tsne_target_wrapped == t],
+                       y=np.array(clusters_tsne_array[clusters_tsne_array.columns[1]])[clusters_tsne_target_wrapped == t],
+                       mode='markers',
+                       legendgroup="clusters",
+                       legendgrouptitle_text="Generated clusters",
+                       name=t,
+                       visible=True)
+        )
+
+    classes_data_mask = ~clusters_data_mask
+    classes_tsne_target_wrapped = tsne_target_wrapped[classes_data_mask]
+    classes_tsne_array = tsne_array[classes_data_mask]
+    for t in np.sort(np.unique(classes_tsne_target_wrapped)):
+        scatterplots_data.append(
+            go.Scatter(x=np.array(classes_tsne_array[classes_tsne_array.columns[0]])[classes_tsne_target_wrapped == t],
+                       y=np.array(classes_tsne_array[classes_tsne_array.columns[1]])[classes_tsne_target_wrapped == t],
+                       mode='markers',
+                       legendgroup="classes",
+                       legendgrouptitle_text="Known classes",
+                       name=t,
+                       visible=True)
+        )
+
+    fig = go.Figure(data=scatterplots_data)
+    # fig.update_layout(legend=dict(groupclick="toggleitem"))  # Toggle the visibility of just the item clicked on by the user, not the whole group
+
+    # Simple un-ordered alternative:
+    # fig = px.scatter(x=np.array(tsne_array[tsne_array.columns[0]]),
+    #                  y=np.array(tsne_array[tsne_array.columns[1]]),
+    #                  color=tsne_target_wrapped)
+
+    fig.update_layout(title="T-SNE of the " + dataset_name + " dataset colored by " + model_name,
+                      yaxis={'title': None},
                       xaxis={'title': None},
                       margin=dict(l=0, r=0, t=40, b=0))
+
     graphJSON = plotly.io.to_json(fig, pretty=True)
     # fig.savefig(os.path.join(image_folder_path, image_filename), dpi=fig.dpi, bbox_inches='tight')
 
@@ -898,7 +967,7 @@ def getThreadResults():
     clustering_prediction = model.predict_new_data(np.array(dataset[selected_features])[unknown_mask])
 
     full_target = np.array(["Class " + str(t) for t in dataset[target_name]])
-    full_target[unknown_mask] = np.array(["Clust " + str(pred) for pred in clustering_prediction])
+    full_target[unknown_mask] = np.array(["Cluster " + str(pred) for pred in clustering_prediction])
 
     saveClusteringResultsInSession(clustering_prediction, target_name, dataset, known_classes, unknown_classes,
                                    selected_features)
