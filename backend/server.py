@@ -778,14 +778,8 @@ def runRulesGeneration():
 
         classes = [f"Class {c}" if c in last_clustering_known_classes else f"Clust {c}" for c in clf.classes_]
 
-        dot_data = tree.export_graphviz(clf, out_file=None,
-                                        feature_names=[f_n.replace('"', '')[:100] for f_n in
-                                                       last_clustering_selected_features],
-                                        filled=True,
-                                        max_depth=decision_tree_max_leaf_nodes,
-                                        class_names=classes,
-                                        proportion=False,
-                                        rounded=True)
+        dot_data = tree.export_graphviz(clf, out_file=None, filled=True, class_names=classes,
+                                        feature_names=[f_n.replace('"', '')[:100] for f_n in last_clustering_selected_features])
 
         dot_data = dot_data[:15] + 'label = "This tree has ' + "{:.1f}".format(
             accuracy_score * 100) + '% train accuracy";\n' + dot_data[15:]
@@ -802,27 +796,21 @@ def runRulesGeneration():
                                           random_state=random_state)
         clf = OneVsRestClassifier(base_clf)
         clf.fit(x, y)
-        accuracy_score = clf.score(x, y)
+        # accuracy_score = clf.score(x, y)
 
         datetime_string = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
         temp_folder = os.path.join(".", "results", "tmp", "temp_folder_" + datetime_string)
 
         pdfs_list = []
         for estimator, c in zip(clf.estimators_, clf.classes_):
-            class_or_cluster = f"Class {c}" if c in last_clustering_known_classes else f"Clust {c}"
+            class_or_cluster = f"Class {c}" if c in last_clustering_known_classes else f"Cluster {c}"
+            # classes = [class_or_cluster if c == 1 else "NOT " + class_or_cluster for c in estimator.classes_]
 
-            classes = [class_or_cluster if c == 1 else "NOT " + class_or_cluster for c in estimator.classes_]
+            dot_data = tree.export_graphviz(estimator, out_file=None, filled=True, class_names=["0", "1"],
+                                            feature_names=[f_n.replace('"', '')[:100] for f_n in last_clustering_selected_features])
 
-            dot_data = tree.export_graphviz(estimator, out_file=None,
-                                            feature_names=[f_n.replace('"', '')[:100] for f_n in
-                                                           last_clustering_selected_features],
-                                            filled=True,
-                                            max_depth=decision_tree_max_leaf_nodes,
-                                            class_names=classes,
-                                            proportion=False)
-
-            dot_data = dot_data[:15] + 'label = "Tree for ' + class_or_cluster + ".\nWhole model had {:.1f}".format(
-                accuracy_score * 100) + '% average train accuracy";\n' + dot_data[15:]
+            tree_accuracy = estimator.score(x, y == c)
+            dot_data = dot_data[:15] + f"label = \"Tree for {class_or_cluster} has {tree_accuracy*100:.1f}% accuracy\";\n" + dot_data[15:]
 
             graph = graphviz.Source(dot_data)
             filename = graph.render(os.path.join(temp_folder, "class_" + str(c)))  # export PDF
