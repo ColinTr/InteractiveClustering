@@ -1,6 +1,18 @@
-# Interactive Clustering
+<h1 align="center">
+  Interactive Clustering
+</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+  Code for the ECML PKDD Demo Track paper <a href="https://arxiv.org/abs/2306.12919">An Interactive Interface for Novel Class Discovery in Tabular Data</a>
+</p>
+
+<div align="center">
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+</div>
+
+
+## 🔍 Overview
 
 This application proposes a simple web interface designed to assist the user in solving the Machine Learning problem of [Novel Class Discovery](https://arxiv.org/pdf/2302.12028.pdf).
 
@@ -26,20 +38,17 @@ PBN, TabularNCD and the baseline rely on an architecture composed of a combinati
 Finally, we note that because Python code cannot be directly executed in a web browser, this application is split in two: a frontend application in React.js to display the interface, and a backend application in Flask to execute the Python code.
 Additionally, web browsers security measures make it impossible to read the full path from file selector. Thus, **datasets must be placed in ./datasets/... and cannot be loaded from other folders.**
 
-
-## The interface
-
 ![Example interface](example_interface.png "Example interface")
 
 
-## Demonstration video for ECML 2023
+## ▶️ Demonstration video for ECML PKDD 2023 Demo Track
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=W7ru8NHPj-8&cc_load_policy=1" target="_blank">
  <img src="youtube_thumbnail.png" alt="Watch the video" border="10" />
 </a>
 
 
-## Installation
+## ⚙️ Installation
 
 **/!\ Warning:**
 Installation wont work behind the **proxy** and on the **intranet**.
@@ -79,7 +88,8 @@ At this point, the backend python server is running, and the frontend website sh
 **Note:** The backend uses the port 5000 and the frontend uses the port 3000.
 
 
-## Citation
+## 📜 Citation
+
 If you found this work useful, please use the following citation:
 ```
 @inproceedings{tr2023interface,
@@ -94,7 +104,7 @@ If you found this work useful, please use the following citation:
 }
 ```
 
-## License
+## ⚖️ License
 
 Copyright (c) 2024 Orange.
 
